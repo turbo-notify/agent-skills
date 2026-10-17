@@ -8,6 +8,7 @@ in :mod:`tn_assist.apply`.
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
 import subprocess
@@ -80,7 +81,7 @@ DAILY_CODES = frozenset(
 )  # fmt: skip
 QUOTA_CODES = frozenset(
     {"payment_required", "contact_quota_exceeded", "messages_quota_exceeded",
-     "feature_not_available", "number_not_connected", "insufficient_scope"}
+     "feature_not_available", "insufficient_scope"}
 )  # fmt: skip
 PACING_WAIT_CAP_S = 15
 PACING_RETRIES = 3
@@ -90,6 +91,11 @@ OUTBOX_MAX_AGE_S = 6 * 3600
 
 def classify(error: ApiError) -> str:
     if error.status == 0 or error.status >= 500:
+        return "transient"
+    if error.code == "number_not_connected" or (
+        error.status in (401, 403) and error.code != "insufficient_scope"
+    ):
+        # heals on its own (a reconnect) or when the key is fixed: hold the answer, do not erase it
         return "transient"
     if error.code in PACING_CODES:
         return "pacing"
@@ -145,9 +151,12 @@ class RestApi:
             except ValueError:
                 pass
             raise ApiError(error.code, code, retry_after) from error
-        except (urllib.error.URLError, TimeoutError, OSError) as error:
+        except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException) as error:
             raise ApiError(0, "network") from error
-        return json.loads(raw) if raw else {}
+        try:
+            return json.loads(raw) if raw else {}
+        except ValueError as error:
+            raise ApiError(0, "bad_response") from error
 
     def events(self, params: dict[str, str]) -> list[Event]:
         query = [("types[]", kind) for kind in EVENT_TYPES] + [("number_id", self._number_id)]
@@ -297,6 +306,10 @@ def _execute(
                             attempts=int(op.get("attempts", 0)) + 1,
                         )
                         _log(ws, "delivery_held", status=error.status, code=error.code, kind=kind)
+                    if error.status in (401, 403):
+                        cause = error.code or str(error.status)
+                        notices = report_failure(ws, cause, now.strftime("%Y-%m"), now)
+                        outbox_add(ws, expand(ws, notices, seed=f"failure-{cause}"), now=now)
                     break
                 if kind == "drop" and op.get("quote"):
                     # a quote the API cannot use must not cost the customer their answer
@@ -373,7 +386,8 @@ def _process(
     if item.kind == "contact" and not _answerable(ws, item):
         complete(ws, item.id)  # paused, handed off or opted out: no model, no reply
         return
-    _hydrate(cfg, api, item)
+    if item.kind in ("contact", "admin", "attendant"):
+        _hydrate(cfg, api, item)  # a compaction works on text that is already stored
     actions: list[Action] = []
     if item.kind in ("admin", "attendant"):
         outcome = run_console_item(ws, item, now)
@@ -518,7 +532,13 @@ def run_cycle(
 
 def run_forever(cfg: RunnerConfig, api: Api, *, once: bool = False) -> None:
     while True:
-        run_cycle(cfg, api)
+        try:
+            run_cycle(cfg, api)
+        except (ApiError, OSError, ValueError, http.client.HTTPException) as error:
+            if once:
+                raise
+            # a sleeping laptop, a 502 or a bad body must not end the attendant: log and try again
+            _log(cfg.workspace, "cycle_failed", error=type(error).__name__)
         if once:
             return
         time.sleep(max(5, min(cfg.interval_s, 600)))

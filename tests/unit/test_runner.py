@@ -526,3 +526,53 @@ def test_a_delivery_left_by_an_older_version_is_discarded_not_fatal(tmp_path: Pa
     )
     cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=1))
     assert api.replies == [] and list((ws.root / "outbox").glob("*.json")) == []
+
+
+def test_a_compaction_item_is_processed_not_fatal(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    e1 = f.inbound_text(preview="pergunta um", created_at="2026-10-17T12:01:00Z")
+    api.add(e1)
+    cycle(cfg, api, FakeHarness('{"reply": "um"}'), T0 + timedelta(minutes=1))
+    item = enqueue(ws, WorkItem.new("compaction", f.ANA, (e1["id"],), T0))
+    harness = FakeHarness('{"summary": "O cliente perguntou o preco.", "facts": []}')
+    report = cycle(cfg, api, harness, T0 + timedelta(minutes=2))
+    assert report.processed >= 1 and report.failed == 0 and item is not None
+
+
+def test_a_refused_key_or_a_reconnecting_number_holds_the_answer(tmp_path: Path) -> None:
+    from tn_assist.runner import classify
+
+    assert classify(ApiError(401, "not_authenticated")) == "transient"
+    assert classify(ApiError(409, "number_not_connected")) == "transient"
+    assert classify(ApiError(403, "insufficient_scope")) == "quota"  # a scope does not heal
+    ws, cfg, api, e = _one_reply(tmp_path)
+    api.errors = [ApiError(401, "not_authenticated")]
+    cycle(cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1))
+    assert api.replies == []
+    assert len(list((ws.root / "outbox").glob("*.json"))) >= 1  # still there, not erased
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=10))
+    assert [r[2] for r in api.replies] == ["Olá!"]
+    assert any("not_authenticated" in s[2] for s in api.sends)  # the people were told, once
+
+
+def test_a_failing_cycle_does_not_end_the_unattended_runner(tmp_path: Path) -> None:
+    from unittest import mock
+
+    from tn_assist.runner import run_forever
+
+    ws, cfg, api = setup(tmp_path)
+    calls = {"n": 0}
+
+    def flaky(*a: Any, **k: Any) -> None:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ApiError(0, "network")
+        raise KeyboardInterrupt
+
+    with (
+        mock.patch("tn_assist.runner.run_cycle", flaky),
+        mock.patch("tn_assist.runner.time.sleep"),
+        pytest.raises(KeyboardInterrupt),
+    ):
+        run_forever(cfg, api)
+    assert calls["n"] == 2  # the first failure was logged and the loop went on
