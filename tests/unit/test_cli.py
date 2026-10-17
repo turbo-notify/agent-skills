@@ -524,3 +524,27 @@ def test_run_needs_the_key_in_the_environment_and_refuses_other_harnesses(tmp_pa
     assert code == 1 and out["error"] == "no_key"
     with pytest.raises(SystemExit):
         run(tmp_path, "run", "--harness", "antigravity")
+
+
+def test_the_default_knowledge_follows_the_language_and_has_clean_descriptions(
+    tmp_path: Path,
+) -> None:
+    code, _ = run(
+        tmp_path,
+        "init",
+        "--connected",
+        f.CONNECTED,
+        "--business",
+        "Shop",
+        "--lang",
+        "en",
+        "--admin",
+        f.OWNER,
+        "--now",
+        NOW,
+    )
+    assert code == 0
+    index = (tmp_path / f.ORG / f.NUM / "knowledge" / "INDEX.md").read_text()
+    assert "- tone.md: how to talk to customers" in index
+    assert "- handoff.md: when to call a person" in index
+    assert "Be friendly" in (tmp_path / f.ORG / f.NUM / "knowledge" / "tone.md").read_text()

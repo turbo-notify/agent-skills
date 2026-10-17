@@ -11,11 +11,28 @@ from tn_assist.paths import PathEscapeError, Workspace
 Visibility = Literal["public", "internal"]
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\.md$")
 _DEFAULT_FILES = {
-    "tone.md": "Fale de forma simpática, curta e clara. Use o idioma do cliente.\n",
-    "handoff.md": (
-        "Quando não souber responder, ou quando o cliente pedir uma pessoa, diga que alguém da "
-        "equipe vai continuar a conversa. Não invente preço, prazo ou promessa.\n"
-    ),
+    "pt": {
+        "tone.md": (
+            "como falar com os clientes",
+            "Fale de forma simpática, curta e clara. Use o idioma do cliente.\n",
+        ),
+        "handoff.md": (
+            "quando chamar uma pessoa",
+            "Quando não souber responder, ou quando o cliente pedir uma pessoa, diga que alguém da "
+            "equipe vai continuar a conversa. Não invente preço, prazo ou promessa.\n",
+        ),
+    },
+    "en": {
+        "tone.md": (
+            "how to talk to customers",
+            "Be friendly, short and clear. Use the customer's language.\n",
+        ),
+        "handoff.md": (
+            "when to call a person",
+            "When you do not know the answer, or the customer asks for a person, say that someone on "
+            "the team will continue the conversation. Do not invent a price, a deadline or a promise.\n",
+        ),
+    },
 }
 
 

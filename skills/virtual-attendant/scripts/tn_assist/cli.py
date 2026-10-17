@@ -159,7 +159,7 @@ def cmd_init(ws_args: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
                 "created_at": utc_iso(now),
             },
         )
-        seed_defaults(ws)
+        seed_defaults(ws, args.lang)
     try:
         key = ContactKey.parse(args.admin)
         registry.add(
