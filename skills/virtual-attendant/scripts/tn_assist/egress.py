@@ -18,16 +18,37 @@ from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
 from tn_assist.sources import SourceRegistry
 
 SHINGLE = 5
-_NUMBERISH = re.compile(r"\+?\d(?:[\d\s().-]{6,}\d)")
+_NUMBERISH = re.compile(r"\+?\d(?:[\d\s().\-/,_\u00b7\u2022:]{6,}\d)")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-_CREDENTIAL = re.compile(r"\btn_(?:live|oat|oup|ort)_[A-Za-z0-9_-]{8,}", re.IGNORECASE)
+_CREDENTIAL = re.compile(r"tn_(?:live|oat|oup|ort)_[A-Za-z0-9_-]{8,}", re.IGNORECASE)
 _WORD = re.compile(r"\w+", re.UNICODE)
+_DATE = re.compile(r"\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b")
+_MONEY = re.compile(
+    r"(?:R\$|US\$|\$|\u20ac|EUR|USD|BRL)\s?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True)
 class EgressVerdict:
     ok: bool
     reasons: tuple[str, ...] = ()
+
+
+def _normalize(text: str) -> str:
+    """What a reader would see: compatibility forms folded, invisible characters gone, every
+    Unicode dash and space turned into a plain one. Detection runs on this, never on raw text."""
+    out = []
+    for ch in unicodedata.normalize("NFKC", text):
+        category = unicodedata.category(ch)
+        if category == "Cf":
+            continue
+        if category == "Pd" or ch in "\u2212\u2011\u2010":
+            out.append("-")
+        elif category in ("Zs", "Zl", "Zp") or ch in "\t\r\n":
+            out.append(" ")
+        else:
+            out.append(ch)
+    return "".join(out)
 
 
 def _fold(text: str) -> str:
@@ -103,25 +124,44 @@ def _other_contacts(ws: Workspace, contact: ContactKey) -> tuple[set[str], set[s
     return numbers, names
 
 
+def _own_text(ws: Workspace, contact: ContactKey) -> str:
+    """Only what this person said, or what a human confirmed about them. Facts the model inferred
+    are left out on purpose: the model could otherwise whitelist a leak by recording it first."""
+    said = [ln.text for ln in read_lines(ws, contact) if ln.role == "contact"]
+    confirmed = [f.value for f in Card.load(ws, contact).facts() if f.source != "inferred"]
+    return " ".join(said + confirmed + [str(contact)])
+
+
 def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerdict:
     reasons: set[str] = set()
+    text = _normalize(text)
     public_text, internal_text = _knowledge_texts(ws)
-    card = Card.load(ws, contact)
-    own_text = " ".join(f.value for f in card.facts()) + " " + str(contact)
-    own_text += " " + " ".join(ln.text for ln in read_lines(ws, contact) if ln.role == "contact")
+    own_text = _normalize(_own_text(ws, contact))
+    public_text = _normalize(public_text)
     allowed_digits = {_canonical(d) for d in _digit_runs(public_text + " " + own_text)}
     allowed_digits.add(str(contact))
     allowed_mail = {m.lower() for m in _EMAIL.findall(public_text + " " + own_text)}
     others, other_names = _other_contacts(ws, contact)
 
+    # Dates and amounts of money are not phone numbers, but only for the "unknown number" rule:
+    # another contact's number is looked for in the whole text, however it is dressed.
+    plain_runs = set(_digit_runs(_MONEY.sub(" ", _DATE.sub(" ", text))))
     for digits in _digit_runs(text):
         canonical = _canonical(digits)
         if canonical in allowed_digits or any(_same_person(canonical, a) for a in allowed_digits):
             continue
         if any(_same_person(canonical, n) for n in others):
             reasons.add("other_contact")
-        else:
+        elif digits in plain_runs:
             reasons.add("personal_data")
+    only_digits = re.sub(r"\D", "", text)
+    for number in others:
+        if (
+            len(number) >= 10
+            and number in only_digits
+            and number not in re.sub(r"\D", "", own_text + public_text)
+        ):
+            reasons.add("other_contact")
     for mail in _EMAIL.findall(text):
         if mail.lower() not in allowed_mail:
             reasons.add("personal_data")

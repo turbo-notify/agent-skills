@@ -112,3 +112,69 @@ def test_credential_shaped_strings_are_blocked(tmp_path: Path) -> None:
 def test_prices_and_dates_are_not_mistaken_for_phones(tmp_path: Path) -> None:
     ws = setup(tmp_path)
     assert verdict(ws, "Pedido em 17/10/2026, total R$ 1.490,00 em 12x.").ok
+
+
+def test_unicode_tricks_do_not_hide_another_contacts_number(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = setup(tmp_path)
+    tricks = [
+        "+55 11 96666\u20115555",  # non-breaking hyphen
+        "55\u00a011\u00a096666\u00a05555",  # non-breaking spaces
+        "\uff15\uff15\uff11\uff11\uff19\uff16\uff16\uff16\uff16\uff15\uff15\uff15\uff15",  # full width
+        "55119666\u200b65555",  # zero width space inside
+        "55/11/96666/5555",
+        "55_11_96666_5555",
+        "55\u2013 11 \u2014 96666 5555",
+        "5 5 1 1 9 6 6 6 6 5 5 5 5",
+    ]
+    for trick in tricks:
+        assert not verdict(ws, f"Fale com {trick}").ok, trick
+
+
+def test_credential_shapes_are_found_inside_words_and_through_invisible_characters(
+    tmp_path: Path,
+) -> None:
+    ws = setup(tmp_path)
+    for text in (
+        "xtn_live_abcdefgh12345678",
+        "tn_\u200blive_abcdefgh12345678",
+        "A=tn_oat_zzzzzzzz00000000",
+    ):
+        assert "credential" in verdict(ws, text).reasons, text
+
+
+def test_inferred_facts_do_not_whitelist_a_leak(tmp_path: Path) -> None:  # security review
+    ws = setup(tmp_path)
+    card = Card.load(ws, ANA)
+    card.merge([Fact("note", f.BRUNO, "inferred", "2026-10-17T10:00:00Z")])
+    card.save()
+    assert "other_contact" in verdict(ws, f"O numero e {f.BRUNO}").reasons
+    card.merge([Fact("note", "ana@example.com", "inferred", "2026-10-17T10:01:00Z")])
+    card.save()
+    assert not verdict(ws, "escreva para ana@example.com").ok
+
+
+def test_what_the_customer_said_is_allowed_back(tmp_path: Path) -> None:
+    ws = setup(tmp_path)
+    from tn_assist.memory import append_line
+
+    append_line(
+        ws,
+        ANA,
+        role="contact",
+        text="meu email e ana@example.com",
+        event_id="evt_1",
+        at="2026-10-17T10:00:00Z",
+    )
+    assert verdict(ws, "Confirmo o envio para ana@example.com").ok
+
+
+def test_a_phone_number_dressed_as_money_or_a_date_is_still_found(tmp_path: Path) -> None:
+    ws = setup(tmp_path)
+    for text in (
+        "so R$ 55.119.666.655,55 hoje",
+        "no dia 55/11/96666-5555",
+        "US$ 5511966665555",
+    ):
+        assert "other_contact" in verdict(ws, text).reasons, text

@@ -93,6 +93,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "pt": "passou do limite de respostas por período",
         "en": "too many replies in a short period",
     },
+    "reply_blocked_notice": {
+        "pt": "Bloqueei uma resposta para {number} para proteger {why}. Nada foi enviado.",
+        "en": "I blocked a reply to {number} to protect {why}. Nothing was sent.",
+    },
     "reason_reply_blocked": {
         "pt": "uma resposta foi bloqueada para proteger {why}",
         "en": "a reply was blocked to protect {why}",

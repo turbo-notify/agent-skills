@@ -394,6 +394,10 @@ class _Context:
         lang = _lang(self.ws)
         why = ", ".join(t(f"egress_{r}", lang) for r in verdict.reasons)
         _count(self.ws, "egress_blocked")
+        if load_state(self.ws, self.key).state is ContactState.DO_NOT_CONTACT:
+            # the customer asked for silence: keep it, only tell the people
+            self.out += _notices(t("reply_blocked_notice", lang, number=str(self.key), why=why))
+            return
         if self.mode == "assist":
             self._emit(t("blocked_draft", lang, why=why))
         else:
@@ -419,6 +423,14 @@ def _count_reply(ws: Workspace, key: ContactKey, now: datetime) -> None:
     record = load_state(ws, key)
     stamps = list(record.counters.get("replies", []))[-99:] + [utc_iso(now)]
     save_state(ws, key, replace(record, counters={**record.counters, "replies": stamps}))
+
+
+def _remember(ws: Workspace, key: ContactKey, decision: Decision, now: datetime) -> None:
+    if not decision.facts:
+        return
+    card = Card.load(ws, key)
+    card.merge([Fact(f.key, f.value, "inferred", utc_iso(now)) for f in decision.facts])
+    card.save()
 
 
 def apply_contact_decision(
@@ -449,10 +461,6 @@ def apply_contact_decision(
     ):
         return _pause(ws, key, "rate_cap", now, record)
 
-    if decision.facts:
-        card = Card.load(ws, key)
-        card.merge([Fact(f.key, f.value, "inferred", utc_iso(now)) for f in decision.facts])
-        card.save()
     if decision.language:
         record = replace(load_state(ws, key), language=decision.language)
         save_state(ws, key, record)
@@ -468,16 +476,21 @@ def apply_contact_decision(
             replace(load_state(ws, key), state=ContactState.DO_NOT_CONTACT, since=utc_iso(now)),
         )
         ctx.say(decision.reply or t("dnc_default", lang))
+        if not ctx.blocked:
+            _remember(ws, key, decision, now)
         return ctx.out
 
     if escalation is not None:
         ctx.say(decision.reply or t("handoff_default", lang))
         if not ctx.blocked:
+            _remember(ws, key, decision, now)
             ctx.out += _open_escalation(ws, key, escalation, now, load_state(ws, key))
         return ctx.out
 
     if decision.reply:
         ctx.say(decision.reply)
-        if mode == "auto" and not ctx.blocked:
+    if not ctx.blocked:
+        _remember(ws, key, decision, now)
+        if decision.reply and mode == "auto":
             _count_reply(ws, key, now)
     return ctx.out

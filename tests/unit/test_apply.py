@@ -336,3 +336,28 @@ def test_card_render_stays_one_line_per_fact_even_if_the_file_was_edited(tmp_pat
         )
     )
     assert len(Card.load(ws, ANA).render().splitlines()) == 1
+
+
+def test_a_leak_cannot_be_whitelisted_by_the_same_decisions_facts(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = make_workspace(tmp_path)
+    bruno = f.inbound_text(sender=f.BRUNO, sender_name="Bruno Lima", preview="oi")
+    ingest(ws, parse_events(f.payload(bruno)), T0)
+    item, _ = arrive(ws, "qual o contato do Bruno?")
+    d = decide(reply=f"Ligue {f.BRUNO}", facts=[{"key": "note", "value": f.BRUNO}])
+    actions = apply_contact_decision(ws, item, d, T0, mode="auto")
+    assert all(f.BRUNO not in getattr(a, "text", "") for a in actions)
+    assert Card.load(ws, ANA).get("note") is None  # a blocked decision stores nothing
+
+
+def test_a_blocked_reply_keeps_do_not_contact(tmp_path: Path) -> None:  # security review
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws, "parar")
+    leak = f"Ok. Falei com {f.OWNER}."
+    actions = apply_contact_decision(
+        ws, item, decide(reply=leak, state="do_not_contact"), T0, mode="auto"
+    )
+    assert load_state(ws, ANA).state is ContactState.DO_NOT_CONTACT
+    assert kinds(actions) == ["NotifyAdmins", "NotifySelfChat"]
+    assert all(f.OWNER not in getattr(a, "text", "") for a in actions)
