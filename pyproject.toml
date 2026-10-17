@@ -43,3 +43,4 @@ known-first-party = ["tn_assist"]
 [tool.ruff.lint.per-file-ignores]
 # Model-facing prompt text is kept on long lines on purpose: wrapping changes nothing for the model.
 "skills/virtual-attendant/scripts/tn_assist/pack.py" = ["E501"]
+"skills/virtual-attendant/scripts/tn_assist/i18n*.py" = ["E501"]  # text catalogs

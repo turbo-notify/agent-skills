@@ -671,7 +671,7 @@ def _pause(ws: Workspace, cmd: Command, now: datetime) -> CommandResult:
 
 
 def forget_contact(ws: Workspace, key: ContactKey, actor: str, now: datetime) -> None:
-    """Erase everything the assistant kept about one customer, and leave a trace that it happened."""
+    """Erase what the assistant kept about one customer, and leave a trace that it happened."""
     directory = ws.contact_dir(key)
     if directory.exists():
         shutil.rmtree(directory)
