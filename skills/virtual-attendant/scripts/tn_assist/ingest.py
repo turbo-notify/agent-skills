@@ -27,7 +27,7 @@ from tn_assist.events import (
 )
 from tn_assist.memory import Card, Fact
 from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
-from tn_assist.queue import Kind, WorkItem, enqueue
+from tn_assist.queue import Kind, WorkItem, drop_outbox_for, enqueue
 from tn_assist.state import mark_takeover
 from tn_assist.store import (
     append_jsonl,
@@ -195,6 +195,9 @@ def ingest(ws: Workspace, events: Sequence[Event], now: datetime) -> IngestResul
                     thread_path(ws, "contact", key), _line(event, "attendant_native", "out")
                 )
                 mark_takeover(ws, key, now_iso)
+                drop_outbox_for(
+                    ws, str(key)
+                )  # a person answered: a queued bot reply must not follow
         else:
             kind: Kind = "contact" if route is Route.CONTACT else "admin"
             who: str | None

@@ -28,7 +28,6 @@ from tn_assist.apply import (
     OptedOut,
     Reply,
     drop_drafts_for,
-    drop_outbox_for,
     list_drafts,
     open_escalations,
     pop_draft,
@@ -47,7 +46,7 @@ from tn_assist.config import load_config, save_config
 from tn_assist.i18n import t
 from tn_assist.memory import Card, Fact, Policy, append_line, read_lines
 from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
-from tn_assist.queue import pending_count
+from tn_assist.queue import drop_outbox_for, pending_count
 from tn_assist.sanitize import clean_fact_value
 from tn_assist.sources import (
     NeedsConfirmation,
@@ -325,6 +324,7 @@ def _takeover(ws: Workspace, cmd: Command, now: datetime) -> CommandResult:
         return _problem(ws, problem or "not_found")
     mark_takeover(ws, key, utc_iso(now))
     drop_drafts_for(ws, str(key))
+    drop_outbox_for(ws, str(key))  # a person speaks now: nothing the assistant queued goes out
     return CommandResult(t("takeover_done", lang, name=_name(ws, key)))
 
 
@@ -693,6 +693,7 @@ def _pause(ws: Workspace, cmd: Command, now: datetime) -> CommandResult:
         return CommandResult(t("not_found", lang))
     key = found[0]
     pause_unless_opted_out(ws, key, reason="paused_by_admin", at=utc_iso(now))
+    drop_outbox_for(ws, str(key))
     return CommandResult(t("paused_one", lang, name=_name(ws, key)))
 
 
@@ -717,6 +718,10 @@ def forget_contact(ws: Workspace, key: ContactKey, actor: str, now: datetime) ->
             if item.get("contact") == str(key):
                 path.unlink()
     drop_outbox_for(ws, str(key))
+    for backup in (
+        (ws.root / "backup").glob(f"*/contacts/{key}") if (ws.root / "backup").is_dir() else []
+    ):
+        shutil.rmtree(backup)  # a copy made before a migration keeps the customer too
     append_jsonl(
         ws.path("audit.log"),
         {"at": utc_iso(now), "action": "forget", "number": str(key), "by": actor},

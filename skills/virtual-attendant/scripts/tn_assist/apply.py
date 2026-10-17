@@ -21,7 +21,7 @@ from tn_assist.egress import check_egress
 from tn_assist.i18n import t
 from tn_assist.memory import Card, Fact, Policy, append_line, read_lines, write_episode
 from tn_assist.paths import ContactKey, Workspace
-from tn_assist.queue import WorkItem
+from tn_assist.queue import WorkItem, drop_outbox_for
 from tn_assist.sanitize import clean_fact_value, clean_summary
 from tn_assist.state import ContactState, load_state, save_state
 from tn_assist.store import read_json, write_json_atomic
@@ -325,17 +325,6 @@ def drop_drafts_for(ws: Workspace, contact: str) -> None:
     if isinstance(data, dict) and data.get("drafts"):
         data["drafts"] = [d for d in data["drafts"] if d.get("contact") != contact]
         write_json_atomic(_drafts_path(ws), data)
-
-
-def drop_outbox_for(ws: Workspace, contact: str) -> None:
-    """Forget deliveries still queued for a customer (an opt-out or erasure came after them)."""
-    folder = ws.path("outbox")
-    if not folder.is_dir():
-        return
-    for path in folder.glob("*.json"):
-        op = read_json(path, {})
-        if isinstance(op, dict) and contact in (op.get("contact"), op.get("to")):
-            path.unlink()
 
 
 def resume_contact(

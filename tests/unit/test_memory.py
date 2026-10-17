@@ -129,6 +129,19 @@ def test_purge_removes_only_lines_older_than_retention(tmp_path: Path) -> None:
     assert [line.event_id for line in read_lines(ws, KEY)] == ["evt_new"]
 
 
+def test_purge_reaches_console_threads_and_migration_copies(tmp_path: Path) -> None:  # review
+    ws = make_workspace(tmp_path)
+    old = (NOW - timedelta(days=91)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    row = json.dumps({"id": "evt_old", "at": old, "role": "contact", "dir": "in", "type": "text"})
+    admin = ws.path("threads", "admin", "5511955554444.jsonl")
+    copy = ws.root / "backup" / "x" / "contacts" / str(KEY) / "transcript.jsonl"
+    for path in (admin, copy):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(row + "\n")
+    assert purge_expired(ws, NOW) == 2
+    assert admin.read_text() == "" and copy.read_text() == ""
+
+
 def test_append_line_is_idempotent_per_event(tmp_path: Path) -> None:
     ws = make_workspace(tmp_path)
     append_line(

@@ -240,3 +240,11 @@ def test_a_short_team_note_is_still_caught_whole(tmp_path: Path) -> None:  # sec
     card.save()
     assert "non_public" in verdict(ws, "Vi aqui que voce ja pagou o sinal, certo?").reasons
     assert verdict(ws, "O plano anual custa R$ 490.").ok
+
+
+def test_a_list_of_national_format_numbers_is_blocked(tmp_path: Path) -> None:  # review
+    ws = setup(tmp_path)
+    text = "Contatos: 11 99999-0001, 21 98888-0002, 11 96666-5555"  # the last one is Bruno's
+    assert "other_contact" in verdict(ws, text).reasons
+    assert "other_contact" in verdict(ws, "Fale com 11 6666-5555 ou 31 97777-0003").reasons  # no 9
+    assert verdict(ws, "Pedido 123456, total R$ 490, entrega em 5 dias uteis.").ok

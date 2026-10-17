@@ -201,11 +201,15 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
         if not is_allowed(canonical) and not any(_same_person(canonical, n) for n in others):
             reasons.add("personal_data")
     only_digits = re.sub(r"[^0-9]", "", text)
+    allowed_run = re.sub(r"[^0-9]", "", own_text + public_text)
     for number in others:
-        if (
-            len(number) >= 10
-            and number in only_digits
-            and number not in re.sub(r"[^0-9]", "", own_text + public_text)
+        if len(number) < 10:
+            continue
+        # the whole number, and the national forms people write ("11 99999-0001", or without the 9)
+        national = number[2:] if number.startswith("55") and len(number) >= 12 else number
+        forms = {number, national, national[:2] + national[-8:]}
+        if any(
+            form in only_digits and form not in allowed_run for form in forms if len(form) >= 10
         ):
             reasons.add("other_contact")
     for mail in _EMAIL.findall(text):

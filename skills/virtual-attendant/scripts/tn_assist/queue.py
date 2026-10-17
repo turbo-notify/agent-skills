@@ -120,6 +120,17 @@ def enqueue(ws: Workspace, item: WorkItem, *, older: bool = False) -> WorkItem:
     return merged
 
 
+def drop_outbox_for(ws: Workspace, contact: str) -> None:
+    """Forget deliveries still queued for a customer (an opt-out or erasure came after them)."""
+    folder = ws.path("outbox")
+    if not folder.is_dir():
+        return
+    for path in folder.glob("*.json"):
+        op = read_json(path, {})
+        if isinstance(op, dict) and contact in (op.get("contact"), op.get("to")):
+            path.unlink()
+
+
 def pending_count(ws: Workspace) -> int:
     directory = _pending_dir(ws)
     return len(list(directory.glob("*.json"))) if directory.is_dir() else 0

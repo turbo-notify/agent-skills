@@ -302,10 +302,14 @@ def purge_expired(ws: Workspace, now: datetime) -> int:
     policy = Policy.load(ws)
     cutoff = utc_iso(now - timedelta(days=policy.raw_retention_days))
     removed = 0
-    contacts = ws.root / "contacts"
-    if not contacts.is_dir():
-        return 0
-    for transcript in contacts.glob("*/transcript.jsonl"):
+    # the customers' transcripts, the copies a migration left, and the console threads
+    transcripts = [
+        *ws.root.glob("contacts/*/transcript.jsonl"),
+        *ws.root.glob("backup/*/contacts/*/transcript.jsonl"),
+        *ws.root.glob("threads/*/*.jsonl"),
+        *ws.root.glob("backup/*/threads/*/*.jsonl"),
+    ]
+    for transcript in transcripts:
         rows = read_jsonl(transcript)
         dropped: set[str] = set()
         kept = []

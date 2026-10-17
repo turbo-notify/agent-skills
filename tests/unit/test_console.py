@@ -525,3 +525,38 @@ def test_a_sent_draft_enters_the_transcript_with_who_wrote_it(
     )
     last = read_lines(ws, ANA)[-1]
     assert (last.role, last.text) == ("attendant", "Oi Ana, o anual sai por R$ 490 no pix.")
+
+
+def _queued_reply(contact: str) -> dict:  # type: ignore[type-arg]
+    return {
+        "op": "send",
+        "to": contact,
+        "text": "x",
+        "idempotency_key": "k-held",
+        "contact": contact,
+        "quote": None,
+    }
+
+
+def test_a_takeover_or_a_pause_drops_what_the_assistant_had_queued(
+    tmp_path: Path,
+) -> None:  # review
+    ws = setup(tmp_path)
+    escalate(ws)
+    outbox_add(ws, [_queued_reply(f.ANA)])
+    run(ws, f"/assumir {f.ANA}")
+    assert outbox_pending(ws) == []
+    outbox_add(ws, [_queued_reply(f.ANA)])
+    run(ws, f"/pausar {f.ANA}")
+    assert outbox_pending(ws) == []
+
+
+def test_forget_also_clears_the_copy_a_migration_left_behind(tmp_path: Path) -> None:  # review
+    ws = setup(tmp_path)
+    escalate(ws)
+    saved = ws.root / "backup" / "2026-10-17-schema1" / "contacts" / f.ANA
+    saved.mkdir(parents=True)
+    (saved / "card.json").write_text("{}")
+    code = run(ws, f"/esquecer {f.ANA}").text.split("/confirmar")[1].split()[0]
+    run(ws, f"/confirmar {code}")
+    assert not saved.exists()
