@@ -44,6 +44,59 @@ STRINGS: dict[str, dict[str, str]] = {
         "pt": "Olá! Sou o atendente virtual de {business}. Como posso ajudar?",
         "en": "Hi! I am the virtual attendant of {business}. How can I help?",
     },
+    "handoff_default": {
+        "pt": (
+            "Vou pedir para uma pessoa da equipe continuar essa conversa com você. "
+            "Ela responde assim que puder."
+        ),
+        "en": (
+            "I will ask someone on the team to continue this conversation with you. "
+            "They will reply as soon as they can."
+        ),
+    },
+    "dnc_default": {
+        "pt": "Tudo bem, não vou mais enviar mensagens por aqui.",
+        "en": "Okay, I will not send you more messages here.",
+    },
+    "escalation_notice": {
+        "pt": (
+            "Uma pessoa precisa assumir o atendimento de {name} ({number}).\n"
+            "Motivo: {reason}\nResumo: {summary}\nÚltima mensagem: {last}\n"
+            "Para devolver ao assistente depois, envie /retomar."
+        ),
+        "en": (
+            "A person needs to take over {name} ({number}).\n"
+            "Reason: {reason}\nSummary: {summary}\nLast message: {last}\n"
+            "To hand it back to the assistant later, send /resume."
+        ),
+    },
+    "escalation_reminder": {
+        "pt": "Lembrete: {name} ({number}) espera uma pessoa há {hours} horas.",
+        "en": "Reminder: {name} ({number}) has been waiting for a person for {hours} hours.",
+    },
+    "contact_paused": {
+        "pt": (
+            "Pausei o atendimento de {number}. Motivo: {reason}. "
+            "Para voltar a responder, envie /retomar."
+        ),
+        "en": ("I paused {number}. Reason: {reason}. To start answering again, send /resume."),
+    },
+    "send_failure_notice": {
+        "pt": "Não consegui enviar mensagens: {cause}. Tentar de novo agora não adianta.",
+        "en": "I could not send messages: {cause}. Trying again now will not help.",
+    },
+    "reason_repeated_messages": {
+        "pt": "as mensagens se repetem, como as de um robô",
+        "en": "the messages repeat, like a bot's",
+    },
+    "reason_rate_cap": {
+        "pt": "passou do limite de respostas por período",
+        "en": "too many replies in a short period",
+    },
+    "reason_empty_decision": {
+        "pt": "o assistente não soube como responder",
+        "en": "the assistant did not know how to answer",
+    },
 }
 
 

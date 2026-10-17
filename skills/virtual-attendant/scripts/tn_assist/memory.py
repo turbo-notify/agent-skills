@@ -64,6 +64,7 @@ class Line:
     kind: str = "message"
     hydrated: bool = True
     truncated: bool = False
+    message_id: str | None = None
 
 
 def _transcript(ws: Workspace, key: ContactKey) -> Path:
@@ -110,6 +111,7 @@ def read_lines_at(path: Path) -> list[Line]:
                 "message",
                 hydrated,
                 truncated,
+                row.get("msg"),
             )
         )
     return lines
