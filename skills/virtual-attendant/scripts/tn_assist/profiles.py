@@ -139,7 +139,12 @@ def _codex(
         "--ignore-rules", "-s", "read-only", "-C", str(cwd), "-c", 'approval_policy="never"',
         "-o", str(out),
     ]  # fmt: skip
+    # MCP tools reach the model through the code-mode host in this Codex, so an administrator
+    # process keeps it (its script sandbox has no process.env and imports nothing: tested with a
+    # canary key) and a customer process, which has no MCP server, turns it off.
     for feature in _CODEX_FEATURES_OFF:
+        if feature == "code_mode_host" and _has_tools(role):
+            continue
         argv += ["--disable", feature]
     if _has_tools(role):
         tools = json.dumps(list(ADMIN_READ_TOOLS))

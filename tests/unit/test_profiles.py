@@ -105,6 +105,9 @@ def test_codex_admin_gets_the_read_tools_and_the_key_variable_name(tmp_path: Pat
     c = child("codex", "admin", tmp_path)
     joined = " ".join(c.argv)
     assert 'bearer_token_env_var="TURBO_NOTIFY_API_KEY"' in joined
+    assert "code_mode_host" not in c.argv  # MCP tools are exposed through it
+    for feature in ("shell_tool", "unified_exec", "apps", "plugins", "hooks", "multi_agent"):
+        assert c.argv[c.argv.index(feature) - 1] == "--disable"
     assert (
         "enabled_tools=" in joined
         and "send_text" not in joined
