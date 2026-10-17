@@ -54,6 +54,20 @@ def append_jsonl(path: Path, record: dict[str, Any]) -> None:
         os.close(fd)
 
 
+def append_jsonl_once(
+    path: Path, record: dict[str, Any], *, key: str = "id", tail: int = 200
+) -> bool:
+    """Append unless a recent line already carries the same ``key`` value. Returns True if written.
+
+    Replays happen right after a crash, so only the tail of the file needs checking.
+    """
+    value = record.get(key)
+    if value is not None and any(row.get(key) == value for row in read_jsonl(path)[-tail:]):
+        return False
+    append_jsonl(path, record)
+    return True
+
+
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     """Read a JSON-lines file; a torn last line (crash mid-write) is ignored."""
     try:
