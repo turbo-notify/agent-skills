@@ -16,6 +16,7 @@ from tn_assist.config import load_config
 from tn_assist.i18n import Lang, t
 from tn_assist.memory import Card
 from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
+from tn_assist.store import read_json, write_json_atomic
 
 
 def _key(seed: str, to: str, text: str) -> str:
@@ -78,3 +79,26 @@ def expand(ws: Workspace, actions: list[Action], *, seed: str) -> list[dict[str,
                 )
             )
     return ops
+
+
+# --- outbox: deliveries that must survive a crash or a failed call ----------------------------
+
+
+def outbox_add(ws: Workspace, ops: list[dict[str, Any]]) -> None:
+    """Write each delivery down before trying it; the idempotency key makes a retry safe."""
+    for op in ops:
+        write_json_atomic(ws.path("outbox", f"{op['idempotency_key']}.json"), op)
+
+
+def outbox_pending(ws: Workspace) -> list[dict[str, Any]]:
+    folder = ws.path("outbox")
+    if not folder.is_dir():
+        return []
+    rows = [read_json(p, None) for p in sorted(folder.glob("*.json"))]
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def outbox_done(ws: Workspace, op: dict[str, Any]) -> None:
+    path = ws.path("outbox", f"{op['idempotency_key']}.json")
+    if path.exists():
+        path.unlink()

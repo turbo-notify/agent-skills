@@ -57,6 +57,12 @@ Rules:
 - Put stable facts you learn about this customer in "facts" (name, interest, budget, objection, stage).
 """
 
+CONSOLE_OUTPUT_FORMAT = (
+    'Answer with one JSON object and nothing else: {"reply": string or null, "command": string or null}. '
+    'Use "command" only to suggest a console command; commands that change something are sent back to '
+    "the person to run themselves."
+)
+
 ADMIN_CONTRACT = """You are the virtual attendant's console for an administrator of {business}.
 This person is authenticated. Answer in their language. Use the console commands when they fit.
 Their message sits between `<person_message_{boundary}>` and `</person_message_{boundary}>`.
@@ -319,7 +325,7 @@ def _console_pack(
         message_bodies=[_neutralize(ln.text) or "(no text)" for ln in new] or ["(no text)"],
         boundary=boundary,
         tag="person_message",
-        tail="",
+        tail=CONSOLE_OUTPUT_FORMAT,
     )
     budget = policy.pack_budget_admin
     text = _fit(parts, budget)

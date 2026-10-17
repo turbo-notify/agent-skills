@@ -516,3 +516,11 @@ def test_a_customer_can_be_handed_to_a_person_without_a_model_answer(tmp_path: P
     assert "decision unreadable" in sends[0]["text"]
     _, queue = run(tmp_path, "status", "--now", NOW)
     assert queue["waiting_for_a_person"] == 1
+
+
+def test_run_needs_the_key_in_the_environment_and_refuses_other_harnesses(tmp_path: Path) -> None:
+    init(tmp_path)
+    code, out = run(tmp_path, "run", "--harness", "claude-code", "--once")
+    assert code == 1 and out["error"] == "no_key"
+    with pytest.raises(SystemExit):
+        run(tmp_path, "run", "--harness", "antigravity")

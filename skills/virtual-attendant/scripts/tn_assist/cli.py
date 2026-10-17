@@ -8,6 +8,7 @@ model; the agent fetches events, reads the pack, writes a decision, and carries 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import sys
@@ -478,6 +479,28 @@ def cmd_forget(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
     return {}
 
 
+def cmd_run(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
+    from tn_assist.profiles import KEY_ENV
+    from tn_assist.runner import RestApi, RunnerConfig, run_forever
+
+    key = os.environ.get(KEY_ENV, "")
+    if not key:
+        raise CliError("no_key", f"set {KEY_ENV} in the environment of the runner")
+    cfg = RunnerConfig(
+        workspace=ws,
+        harness=args.harness,
+        api_key=key,
+        api_base=os.environ.get("TURBO_NOTIFY_API_URL", "https://api.turbonotify.com"),
+        mcp_url=os.environ.get("TURBO_NOTIFY_MCP_URL", "https://mcp.turbonotify.com"),
+        interval_s=args.interval,
+        model=args.model,
+    )
+    api = RestApi(cfg.api_base, key, ws.num_id)
+    with contextlib.suppress(KeyboardInterrupt):
+        run_forever(cfg, api, once=args.once)
+    return {"stopped": True}
+
+
 def cmd_purge(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
     return {
         "removed": purge_expired(ws, _now(args)),
@@ -575,6 +598,11 @@ def _parser() -> argparse.ArgumentParser:
     p = add("forget")
     p.add_argument("--contact", required=True)
     add("purge")
+    p = add("run", now=False)
+    p.add_argument("--harness", choices=["claude-code", "codex"], required=True)
+    p.add_argument("--interval", type=int, default=20)
+    p.add_argument("--once", action="store_true")
+    p.add_argument("--model")
     return root
 
 
@@ -600,6 +628,7 @@ _WORKSPACE_COMMANDS = {
     "export": cmd_export,
     "forget": cmd_forget,
     "purge": cmd_purge,
+    "run": cmd_run,
 }
 
 

@@ -188,6 +188,15 @@ def get_leased(ws: Workspace, item_id: str) -> WorkItem | None:
     return WorkItem.from_json(data["item"]) if isinstance(data, dict) else None
 
 
+def release_for_retry(ws: Workspace, item_id: str, now: datetime, delay_s: int) -> None:
+    """Keep the item leased; it comes back after ``delay_s`` (a failed attempt, not a loop)."""
+    path = _leased_dir(ws) / f"{item_id}.json"
+    data = read_json(path, None)
+    if isinstance(data, dict):
+        data["lease_until"] = utc_iso(now + timedelta(seconds=delay_s))
+        write_json_atomic(path, data)
+
+
 def complete(ws: Workspace, item_id: str) -> None:
     path = _leased_dir(ws) / f"{item_id}.json"
     if path.exists():
