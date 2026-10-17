@@ -489,3 +489,30 @@ def test_a_model_proposed_command_that_changes_something_is_only_a_suggestion(
 def test_a_model_proposed_read_only_command_runs(tmp_path: Path) -> None:
     out = _apply_model_command(tmp_path, "/status")
     assert any("Modo" in o["text"] for o in out["deliveries"])
+
+
+def test_a_customer_can_be_handed_to_a_person_without_a_model_answer(tmp_path: Path) -> None:
+    init(tmp_path)
+    run(tmp_path, "mode", "auto")
+    run(tmp_path, "cursor", "--set", "evt_" + "0" * 32)
+    event = f.inbound_text(preview="oi")
+    run(tmp_path, "ingest", "--file", write(tmp_path / "e.json", f.payload(event)), "--now", NOW)
+    _, leased = run(tmp_path, "next", "--kinds", "contact", "--now", NOW)
+    code, out = run(
+        tmp_path,
+        "apply",
+        "--item",
+        leased["item"]["id"],
+        "--escalate",
+        "decision unreadable",
+        "--now",
+        NOW,
+    )
+    assert code == 0
+    kinds = {o["op"] for o in out["deliveries"]}
+    assert kinds == {"reply", "send"}
+    sends = [o for o in out["deliveries"] if o["op"] == "send"]
+    assert {o["to"] for o in sends} == {f.OWNER, f.CONNECTED}
+    assert "decision unreadable" in sends[0]["text"]
+    _, queue = run(tmp_path, "status", "--now", NOW)
+    assert queue["waiting_for_a_person"] == 1

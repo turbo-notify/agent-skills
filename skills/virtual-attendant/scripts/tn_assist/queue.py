@@ -31,6 +31,7 @@ class WorkItem:
     created_at: str
     hydrated_ids: tuple[str, ...] = ()
     handled_ids: tuple[str, ...] = ()
+    attempts: int = 0
 
     @classmethod
     def new(
@@ -64,6 +65,7 @@ class WorkItem:
             "created_at": self.created_at,
             "hydrated_ids": list(self.hydrated_ids),
             "handled_ids": list(self.handled_ids),
+            "attempts": self.attempts,
         }
 
     @classmethod
@@ -76,6 +78,7 @@ class WorkItem:
             created_at=data["created_at"],
             hydrated_ids=tuple(data.get("hydrated_ids") or ()),
             handled_ids=tuple(data.get("handled_ids") or ()),
+            attempts=int(data.get("attempts", 0)),
         )
 
 
@@ -89,7 +92,9 @@ def _leased_dir(ws: Workspace) -> Path:
 
 def _merge(old: WorkItem, new: WorkItem) -> WorkItem:
     ids = old.event_ids + tuple(e for e in new.event_ids if e not in old.event_ids)
-    return replace(old, event_ids=ids[-MAX_EVENT_IDS:])  # older lines stay in the transcript
+    return replace(
+        old, event_ids=ids[-MAX_EVENT_IDS:], attempts=max(old.attempts, new.attempts)
+    )  # older lines stay in the transcript
 
 
 def enqueue(ws: Workspace, item: WorkItem) -> WorkItem:
@@ -144,6 +149,7 @@ def lease_next(
         return None
     candidates.sort(key=lambda c: (c[0], c[1]))
     _, _, path, item = candidates[0]
+    item = replace(item, attempts=item.attempts + 1)
     lease_until = utc_iso(now + timedelta(seconds=ttl_s))
     write_json_atomic(
         _leased_dir(ws) / f"{item.id}.json", {"item": item.to_json(), "lease_until": lease_until}

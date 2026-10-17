@@ -27,17 +27,11 @@ from tn_assist.apply import (
     InvalidDecision,
     NotifyAdmins,
     NotifySelfChat,
-    Say,
-    apply_compaction,
-    apply_contact_decision,
     due_reminders,
-    parse_compaction,
-    parse_decision,
     report_failure,
 )
-from tn_assist.commands import authorize, is_read_only, parse_command
 from tn_assist.config import SCHEMA_VERSION, load_config, save_config
-from tn_assist.console import capture_text, forget_contact, queue_entries, run_command
+from tn_assist.console import forget_contact, queue_entries
 from tn_assist.deliver import expand
 from tn_assist.events import Event, parse_events
 from tn_assist.i18n import Lang, t
@@ -46,9 +40,7 @@ from tn_assist.knowledge import InvalidKnowledgePath, seed_defaults, write_knowl
 from tn_assist.memory import (
     Card,
     Policy,
-    compaction_chunk,
     episodes,
-    needs_compaction,
     purge_expired,
     read_lines_at,
     set_text_at,
@@ -58,10 +50,8 @@ from tn_assist.paths import ContactKey, InvalidContactKey, InvalidWorkspaceId, W
 from tn_assist.queue import (
     WorkItem,
     complete,
-    enqueue,
     get_leased,
     lease_next,
-    mark_handled,
     mark_hydrated,
     pending_count,
 )
@@ -78,6 +68,7 @@ from tn_assist.threads import thread_path
 from tn_assist.timeutil import parse_iso, utc_iso
 from tn_assist.version import check as version_check
 from tn_assist.version import fetch_latest
+from tn_assist.workflow import apply_decision_text, run_console_item
 
 _LEASE_SECONDS = 900
 
@@ -272,102 +263,35 @@ def cmd_pack(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
     return {"pack": pack.text, "tokens": pack.tokens, "sources": list(pack.sources)}
 
 
-def _role(kind: str) -> str:
-    return {"contact": "contact", "admin": "admin", "attendant": "attendant"}[kind]
-
-
 def cmd_apply(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
     item = get_leased(ws, args.item)
     if item is None:
         raise CliError("unknown_item", "the item is not leased")
     now = _now(args)
-    raw = Path(args.decision_file).read_text(encoding="utf-8")
-    if item.kind == "compaction":
-        try:
-            apply_compaction(ws, item, parse_compaction(raw), now)
-        except InvalidDecision as error:
-            raise CliError("invalid_decision", str(error)) from error
-        complete(ws, item.id)
-        return {"deliveries": []}
+    if args.escalate:
+        if item.kind != "contact":
+            raise CliError("invalid_decision", "only a customer turn can be handed to a person")
+        raw = json.dumps(
+            {"escalate": {"reason": args.escalate[:300], "summary": "", "urgency": "normal"}}
+        )
+    else:
+        raw = Path(args.decision_file).read_text(encoding="utf-8")
     try:
-        decision = parse_decision(_role(item.kind), raw)  # type: ignore[arg-type]
+        actions = apply_decision_text(ws, item, raw, now)
     except InvalidDecision as error:
         raise CliError("invalid_decision", str(error)) from error
-    actions: list[Action] = []
-    if item.kind == "contact":
-        auto = load_config(ws).get("mode") == "auto"
-        actions = apply_contact_decision(ws, item, decision, now, mode="auto" if auto else "assist")
-        _queue_compaction(ws, item, now)
-    else:
-        role = "admin" if item.kind == "admin" else "attendant"
-        actor = item.contact or "self"
-        to = actor if item.kind == "admin" else "self"
-        if decision.command:
-            # The model read text written by customers. It may only run what changes nothing;
-            # anything else goes back to the person as a command they must send themselves.
-            cmd = parse_command(decision.command)
-            if cmd is not None and authorize(cmd, role):  # type: ignore[arg-type]
-                if is_read_only(cmd):
-                    result = run_command(ws, role, actor, cmd, now)  # type: ignore[arg-type]
-                    actions += [Say(to, result.text), *result.actions]
-                else:
-                    actions.append(Say(to, t("suggest_command", _lang(ws), command=cmd.raw)))
-        if decision.reply:
-            actions.append(Say(to, decision.reply))
-    if not args.keep:
-        complete(ws, item.id)
     return {"deliveries": _deliveries(ws, actions, item.id)}
-
-
-def _queue_compaction(ws: Workspace, item: WorkItem, now: datetime) -> None:
-    """When the transcript has outgrown its window, ask for a summary of the oldest part."""
-    assert item.contact is not None
-    key = ContactKey.parse(item.contact)
-    policy = Policy.load(ws)
-    if needs_compaction(ws, key, policy):
-        chunk = compaction_chunk(ws, key, policy)
-        if chunk:
-            enqueue(
-                ws,
-                WorkItem.new(
-                    "compaction", item.contact, (chunk[0].event_id, chunk[-1].event_id), now
-                ),
-            )
 
 
 def cmd_run_console(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
     item = get_leased(ws, args.item)
     if item is None or item.kind not in ("admin", "attendant"):
         raise CliError("unknown_item", "not a console item")
-    now = _now(args)
-    role = "admin" if item.kind == "admin" else "attendant"
-    actor = item.contact or "self"
-    to = actor if item.kind == "admin" else "self"
-    lines = {ln.event_id: ln for ln in read_lines_at(thread_path(ws, item.kind, item.contact))}
-    actions: list[Action] = []
-    needs_model = False
-    for event_id in item.event_ids:
-        if event_id in item.handled_ids:
-            continue
-        line = lines.get(event_id)
-        if line is None:
-            mark_handled(ws, item.id, event_id)
-            continue
-        captured = capture_text(ws, actor, line.text, now) if item.kind == "admin" else None
-        if captured is not None:
-            actions.append(Say(to, captured.text))
-            mark_handled(ws, item.id, event_id)
-            continue
-        cmd = parse_command(line.text)
-        if cmd is None:
-            needs_model = True
-            continue
-        result = run_command(ws, role, actor, cmd, now, message_id=line.message_id)  # type: ignore[arg-type]
-        actions += [Say(to, result.text), *result.actions]
-        mark_handled(ws, item.id, event_id)
-    if not needs_model:
-        complete(ws, item.id)
-    return {"needs_model": needs_model, "deliveries": _deliveries(ws, actions, item.id)}
+    outcome = run_console_item(ws, item, _now(args))
+    return {
+        "needs_model": outcome.needs_model,
+        "deliveries": _deliveries(ws, outcome.actions, item.id),
+    }
 
 
 def cmd_complete(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
@@ -607,8 +531,9 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--about")
     p = add("apply")
     p.add_argument("--item", required=True)
-    p.add_argument("--decision-file", required=True)
-    p.add_argument("--keep", action="store_true")
+    source = p.add_mutually_exclusive_group(required=True)
+    source.add_argument("--decision-file")
+    source.add_argument("--escalate", metavar="REASON", help="hand the customer to a person")
     p = add("run-console")
     p.add_argument("--item", required=True)
     p = add("complete", now=False)
