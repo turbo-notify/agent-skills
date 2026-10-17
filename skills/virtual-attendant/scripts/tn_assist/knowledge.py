@@ -18,8 +18,8 @@ _DEFAULT_FILES = {
         ),
         "handoff.md": (
             "quando chamar uma pessoa",
-            "Quando não souber responder, ou quando o cliente pedir uma pessoa, diga que alguém da "
-            "equipe vai continuar a conversa. Não invente preço, prazo ou promessa.\n",
+            "Quando não souber responder, ou quando o cliente pedir uma pessoa, diga que alguém "
+            "da equipe vai continuar a conversa. Não invente preço, prazo ou promessa.\n",
         ),
     },
     "en": {
@@ -29,8 +29,9 @@ _DEFAULT_FILES = {
         ),
         "handoff.md": (
             "when to call a person",
-            "When you do not know the answer, or the customer asks for a person, say that someone on "
-            "the team will continue the conversation. Do not invent a price, a deadline or a promise.\n",
+            "When you do not know the answer, or the customer asks for a person, say that "
+            "someone on the team will continue the conversation. Do not invent a price, a "
+            "deadline or a promise.\n",
         ),
     },
 }
@@ -66,10 +67,8 @@ def write_knowledge(
     return relative
 
 
-def seed_defaults(ws: Workspace) -> None:
+def seed_defaults(ws: Workspace, lang: str = "pt") -> None:
     """Safe, generic files so a new workspace can answer before anything is taught."""
-    for name, text in _DEFAULT_FILES.items():
+    for name, (description, text) in _DEFAULT_FILES["en" if lang == "en" else "pt"].items():
         if not ws.path("knowledge", name).exists():
-            write_knowledge(
-                ws, name, text, visibility="public", description=text.split(".")[0][:80]
-            )
+            write_knowledge(ws, name, text, visibility="public", description=description)
