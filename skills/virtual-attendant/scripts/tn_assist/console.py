@@ -754,6 +754,10 @@ def _forget(ws: Workspace, cmd: Command, actor: str, now: datetime) -> CommandRe
     return CommandResult(t("forgotten", lang, number=str(key)))
 
 
+# agents that cannot run a customer turn without tools: a person must approve every answer
+NO_RUNNER_HARNESSES = frozenset({"claude-desktop", "antigravity"})
+
+
 def _mode(ws: Workspace, cmd: Command) -> CommandResult:
     lang = _lang(ws)
     word = _fold(cmd.args[0]) if cmd.args else ""
@@ -761,6 +765,8 @@ def _mode(ws: Workspace, cmd: Command) -> CommandResult:
     if word in ("assistido", "assist", "assisted", "sombra", "shadow"):
         config["mode"] = "assist"
     elif word in ("automatico", "auto", "automatic", "ativo", "live"):
+        if config.get("harness") in NO_RUNNER_HARNESSES:
+            return CommandResult(t("mode_auto_unavailable", lang))
         config["mode"] = "auto"
     else:
         return CommandResult(t("mode_help", lang))

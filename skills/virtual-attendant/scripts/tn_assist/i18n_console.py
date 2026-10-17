@@ -261,6 +261,10 @@ CONSOLE_STRINGS: dict[str, dict[str, str]] = {
         "pt": "Use /modo assistido (espera aprovação) ou /modo automático (responde sozinho).",
         "en": "Use /mode assist (waits for approval) or /mode auto (answers by itself).",
     },
+    "mode_auto_unavailable": {
+        "pt": "Neste aplicativo o atendente só funciona no modo assistido: uma pessoa aprova cada resposta. O modo automático é do Claude Code e do Codex, com o executor.",
+        "en": "In this app the attendant only works in assisted mode: a person approves every answer. Automatic mode is for Claude Code and Codex, with the runner.",
+    },
     "lang_set": {"pt": "Idioma: português.", "en": "Language: English."},
     "lang_help": {"pt": "Use /idioma pt ou /idioma en.", "en": "Use /lang pt or /lang en."},
     "policy_text": {

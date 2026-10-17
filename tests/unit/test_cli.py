@@ -59,6 +59,8 @@ def test_init_creates_the_workspace_with_the_first_admin(tmp_path: Path) -> None
     cfg = json.loads((tmp_path / f.ORG / f.NUM / "config.json").read_text())
     assert cfg["mode"] == "assist" and cfg["connected_number"] == f.CONNECTED
     assert run(tmp_path, "admin", "list")[1]["admins"] == [f.OWNER]
+    policy = json.loads((tmp_path / f.ORG / f.NUM / "memory-policy.json").read_text())
+    assert policy["raw_retention_days"] == 90  # a file with the numbers a person may edit
 
 
 def test_init_twice_keeps_what_is_there(tmp_path: Path) -> None:  # AC32

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import dataclasses
 import json
 import os
 import sys
@@ -164,6 +165,9 @@ def cmd_init(ws_args: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
             },
         )
         seed_defaults(ws, args.lang)
+        policy_path = ws.path("memory-policy.json")
+        if not policy_path.exists():  # the numbers a person may edit; a copy already there is kept
+            write_json_atomic(policy_path, dataclasses.asdict(Policy()))
     try:
         key = ContactKey.parse(args.admin)
         registry.add(

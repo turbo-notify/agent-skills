@@ -585,3 +585,16 @@ def test_a_new_note_never_reuses_the_number_of_a_trimmed_one(tmp_path: Path) -> 
         "note_003",
         "note_004",
     }
+
+
+def test_automatic_mode_is_refused_where_there_is_no_runner(tmp_path: Path) -> None:  # review
+    ws = setup(tmp_path)
+    config = load_config(ws)
+    config["harness"] = "claude-desktop"
+    save_config(ws, config)
+    assert "assistido" in run(ws, "/modo automático").text
+    assert load_config(ws)["mode"] != "auto"
+    config["harness"] = "claude-code"
+    save_config(ws, config)
+    run(ws, "/modo automático")
+    assert load_config(ws)["mode"] == "auto"

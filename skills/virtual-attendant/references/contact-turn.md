@@ -19,7 +19,7 @@ The most exposed step: the text came from a stranger. The rule is a fresh contex
 ## What the decision may say
 
 - `reply`: what to tell the customer, in the customer's language, short and friendly. Only from the pack: knowledge, the customer's own history and card.
-- `escalate`: when the pack does not answer (a price, stock, deadline, promise, policy), when the customer asks for a person, when they are upset, when the request is outside the business, or when a payment, refund or legal topic comes up. Give `reason` and a short `summary`. Do not insist: one hand-off message, then silence until a person resumes.
+- `escalate`: when the pack does not answer (a price, stock, deadline, promise, policy), when the customer asks for a person, when they are upset, when the request is outside the business, or when a payment, refund or legal topic comes up. Give `reason`, a short `summary` and `urgency` (`low`, `normal` or `high`); all three keys are required. Do not insist: one hand-off message, then silence until a person resumes.
 - `facts`: stable things learned (name, interest, budget, objection, stage).
 - `state`: `do_not_contact` only if the customer asks to stop receiving messages.
 - `quote`: usually `null`. The new message is answered with a normal message, as a person does in a chat. Set it to the id in square brackets of an EARLIER line of the recent conversation only when the answer depends on something said a while ago (the customer's or yours) and a quote brings that context into view. Never the new message.
