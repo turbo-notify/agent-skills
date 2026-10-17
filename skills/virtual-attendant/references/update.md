@@ -1,6 +1,6 @@
 # Updates
 
-The skill checks its own version on every cycle (`tn_assist version-check --announce`, cached for an hour). When a newer version exists, the administrators get one message with the installed and new versions and the exact command for the harness. A failed check says nothing and never stops service.
+The skill checks its own version on every cycle (`tn_assist version-check --announce`, cached for an hour, or ten minutes after a failed check). When a newer version exists, the administrators get one message with the installed and new versions and the exact command for the harness. A failed check says nothing and never stops service.
 
 ## Commands, by harness
 
