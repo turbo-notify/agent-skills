@@ -49,7 +49,7 @@ def make_event(
     created_at: str = "2026-10-17T12:00:00Z",
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Build one event. `sender` and `recipient` are phone numbers (the connected one has an alias)."""
+    """Build one event; `sender` and `recipient` are phone numbers."""
     if direction == "inbound":
         frm = _party(sender, sender_name, "main" if sender == connected else None)
         if group:
