@@ -40,6 +40,26 @@ STRINGS: dict[str, dict[str, str]] = {
             "so only the person who set up the assistant can register it. Ask that person."
         ),
     },
+    "update_notice": {
+        "pt": "Há uma versão nova do atendente virtual: {latest} (a instalada é {installed}). Para atualizar: {command}",
+        "en": "There is a new version of the virtual attendant: {latest} (installed: {installed}). To update: {command}",
+    },
+    "update_hint_claude_code": {
+        "pt": "claude plugin marketplace update turbo-notify && claude plugin update turbo-notify@turbo-notify (depois reinicie o Claude Code)",
+        "en": "claude plugin marketplace update turbo-notify && claude plugin update turbo-notify@turbo-notify (then restart Claude Code)",
+    },
+    "update_hint_claude_desktop": {
+        "pt": "no Claude Desktop ou no Cowork, abra o marketplace turbo-notify em Plugins e use Check for updates, ou ligue Sync automatically",
+        "en": "in Claude Desktop or Cowork, open the turbo-notify marketplace under Plugins and use Check for updates, or turn on Sync automatically",
+    },
+    "update_hint_codex": {
+        "pt": "codex plugin marketplace upgrade && codex plugin add turbo-notify@turbo-notify",
+        "en": "codex plugin marketplace upgrade && codex plugin add turbo-notify@turbo-notify",
+    },
+    "update_hint_antigravity": {
+        "pt": "agy plugin install https://github.com/turbo-notify/agent-skills",
+        "en": "agy plugin install https://github.com/turbo-notify/agent-skills",
+    },
     "greeting_default": {
         "pt": "Olá! Sou o atendente virtual de {business}. Como posso ajudar?",
         "en": "Hi! I am the virtual attendant of {business}. How can I help?",
