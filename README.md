@@ -73,7 +73,7 @@ poetry run mypy
 python3 tools/release.py check
 ```
 
-Releases bump `VERSION`, `latest.json`, both manifests and `CHANGELOG.md` together (`tools/release.py sync`),
+Releases bump `VERSION`, `latest.json`, the three manifests, the helper and pyproject versions and `CHANGELOG.md` together (`tools/release.py sync`),
 then move the `v1` tag.
 
 ## License
