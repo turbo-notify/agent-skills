@@ -33,6 +33,9 @@ Source = Literal["inferred", "attendant", "admin"]
 _RANK = {"inferred": 0, "attendant": 1, "admin": 2}
 
 
+AUTO_RESUME_MIN_MINUTES = 5
+
+
 @dataclass(frozen=True)
 class Policy:
     pack_budget_contact: int = 6000
@@ -44,6 +47,7 @@ class Policy:
     reply_cap_per_hour: int = 6
     reply_cap_per_day: int = 30
     handoff_reminder_hours: int = 4
+    auto_resume_after_minutes: int | None = None  # off; at least AUTO_RESUME_MIN_MINUTES
 
     @classmethod
     def load(cls, ws: Workspace) -> Policy:

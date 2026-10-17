@@ -19,8 +19,16 @@ from typing import Any, Literal, Union
 from tn_assist.config import load_config
 from tn_assist.egress import check_egress
 from tn_assist.i18n import t
-from tn_assist.memory import Card, Fact, Policy, append_line, read_lines, write_episode
-from tn_assist.paths import ContactKey, Workspace
+from tn_assist.memory import (
+    AUTO_RESUME_MIN_MINUTES,
+    Card,
+    Fact,
+    Policy,
+    append_line,
+    read_lines,
+    write_episode,
+)
+from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
 from tn_assist.queue import WorkItem, drop_outbox_for
 from tn_assist.sanitize import clean_fact_value, clean_summary
 from tn_assist.state import ContactState, load_state, save_state
@@ -407,10 +415,53 @@ def _open_escalation(
     )
 
 
+def due_auto_resumes(ws: Workspace, now: datetime) -> list[Action]:
+    """Give a conversation back when no person has written for ``auto_resume_after_minutes``.
+
+    Only a human takeover is handed back: a pause by an administrator, an escalation waiting for a
+    person and a customer who asked to stop all stay as they are. ``since`` is the moment of the
+    last message a person wrote, so a conversation that is still going is never handed back.
+    """
+    minutes = Policy.load(ws).auto_resume_after_minutes
+    if (
+        isinstance(minutes, bool)
+        or not isinstance(minutes, int)
+        or minutes < AUTO_RESUME_MIN_MINUTES
+    ):
+        return []
+    lang = _lang(ws)
+    actions: list[Action] = []
+    root = ws.root / "contacts"
+    for directory in sorted(root.iterdir()) if root.is_dir() else []:
+        try:
+            key = ContactKey.parse(directory.name)
+        except InvalidContactKey:
+            continue
+        record = load_state(ws, key)
+        if (
+            record.state is not ContactState.PAUSED
+            or not record.human_takeover
+            or not record.since
+            or now - parse_iso(record.since) < timedelta(minutes=minutes)
+        ):
+            continue
+        resume_contact(ws, key, by="auto", now=now)
+        actions += _notices(
+            t(
+                "auto_resumed",
+                lang,
+                name=_display_name(ws, key),
+                number=str(key),
+                minutes=str(minutes),
+            )
+        )
+    return actions
+
+
 def due_reminders(ws: Workspace, now: datetime) -> list[Action]:
     policy = Policy.load(ws)
     lang = _lang(ws)
-    actions: list[Action] = []
+    actions: list[Action] = list(due_auto_resumes(ws, now))
     for row in open_escalations(ws):
         if row.get("last_reminder_at"):
             continue

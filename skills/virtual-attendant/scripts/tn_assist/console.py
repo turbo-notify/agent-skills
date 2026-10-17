@@ -44,7 +44,7 @@ from tn_assist.commands import (
 )
 from tn_assist.config import load_config, save_config
 from tn_assist.i18n import t
-from tn_assist.memory import Card, Fact, Policy, append_line, read_lines
+from tn_assist.memory import AUTO_RESUME_MIN_MINUTES, Card, Fact, Policy, append_line, read_lines
 from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
 from tn_assist.queue import drop_outbox_for, pending_count
 from tn_assist.sanitize import clean_fact_value
@@ -790,6 +790,17 @@ def _lang_command(ws: Workspace, cmd: Command) -> CommandResult:
     return CommandResult(t("lang_set", word))  # type: ignore[arg-type]
 
 
+def _resume_setting(policy: Policy, lang: Literal["pt", "en"]) -> str:
+    minutes = policy.auto_resume_after_minutes
+    if (
+        isinstance(minutes, int)
+        and not isinstance(minutes, bool)
+        and minutes >= AUTO_RESUME_MIN_MINUTES
+    ):
+        return f"{minutes} min"
+    return "desligado" if lang == "pt" else "off"
+
+
 def _policy(ws: Workspace) -> CommandResult:
     p = Policy.load(ws)
     proposals = ws.path("policy-proposals.md")
@@ -804,6 +815,7 @@ def _policy(ws: Workspace) -> CommandResult:
             per_hour=str(p.reply_cap_per_hour),
             per_day=str(p.reply_cap_per_day),
             reminder=str(p.handoff_reminder_hours),
+            resume=_resume_setting(p, _lang(ws)),
             proposals=str(count),
         )
     )

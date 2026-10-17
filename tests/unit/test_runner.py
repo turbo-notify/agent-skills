@@ -630,3 +630,19 @@ def test_an_unknown_429_is_waited_out_not_erased() -> None:
     from tn_assist.runner import classify
 
     assert classify(ApiError(429, "some_new_limit")) == "pacing"
+
+
+def test_the_runner_hands_a_forgotten_takeover_back_and_tells_the_people(tmp_path: Path) -> None:
+    from tn_assist.state import mark_takeover
+
+    ws, cfg, api = setup(tmp_path)
+    ws.path("memory-policy.json").write_text('{"auto_resume_after_minutes": 30}')
+    api.add(f.inbound_text(preview="oi", created_at="2026-10-17T12:01:00Z"))
+    cycle(cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1))
+    mark_takeover(ws, ANA, "2026-10-17T12:05:00Z")  # a person answered from the phone
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=20))
+    assert load_state(ws, ANA).state is ContactState.PAUSED
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=40))  # 35 minutes without a person
+    assert load_state(ws, ANA).state is ContactState.ACTIVE
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=41))
+    assert any("voltou para o atendente virtual" in s[2] for s in api.sends)

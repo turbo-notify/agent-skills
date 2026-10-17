@@ -63,8 +63,8 @@ def test_sync_is_idempotent_and_repairs_drift(
 ) -> None:
     repo = copy_repo(tmp_path)
     monkeypatch.setattr(release, "ROOT", repo)
-    (repo / "VERSION").write_text("0.2.0\n")
-    (repo / "CHANGELOG.md").write_text("# Changelog\n\n## 0.2.0\n\nx\n")
+    (repo / "VERSION").write_text("9.9.9\n")
+    (repo / "CHANGELOG.md").write_text("# Changelog\n\n## 9.9.9\n\nx\n")
     release.sync("2026-11-01")
     first = {p.name: p.read_text() for p in (repo / ".claude-plugin").iterdir()} | {
         "root": (repo / "plugin.json").read_text(),
@@ -143,8 +143,8 @@ def test_check_catches_a_helper_that_was_not_bumped_and_sync_fixes_it(
 ) -> None:
     repo = copy_repo(tmp_path)
     monkeypatch.setattr(release, "ROOT", repo)
-    (repo / "VERSION").write_text("0.2.0\n")
-    (repo / "CHANGELOG.md").write_text("# Changelog\n\n## 0.2.0\n\nx\n")
+    (repo / "VERSION").write_text("9.9.9\n")
+    (repo / "CHANGELOG.md").write_text("# Changelog\n\n## 9.9.9\n\nx\n")
     assert any("helper __version__" in p for p in release.problems())
     release.sync(None)
     assert release.problems() == []

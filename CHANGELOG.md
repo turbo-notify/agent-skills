@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- A conversation that a person took over can come back to the virtual attendant by itself: set `auto_resume_after_minutes` (off by default, minimum 5) in `memory-policy.json`. The time counts from the last message a person wrote, and the administrators and the number's own chat get a notice.
+- `/politica` shows the new setting.
+- Setup now writes `memory-policy.json`, knowledge files are private to the user, and automatic mode is refused where a tool-less customer turn is not possible (Claude Desktop, Cowork, Antigravity).
+- The runner holds an answer it cannot deliver yet (a key problem, a reconnecting number, an unknown limit) instead of dropping it, backs off failed attempts and survives a failing cycle.
+
 ## 0.1.0
 
 First release.

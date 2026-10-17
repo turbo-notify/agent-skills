@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -452,3 +453,85 @@ def test_a_fact_the_model_records_can_never_pose_as_a_team_note() -> None:  # co
         }
     )
     assert [fact.key for fact in parse_decision("contact", raw).facts] == ["interest"]
+
+
+def _taken_over(ws, key: ContactKey, at: str) -> None:  # type: ignore[no-untyped-def]
+    from tn_assist.state import mark_takeover
+
+    mark_takeover(ws, key, at)
+
+
+def _set_policy(ws, **values) -> None:  # type: ignore[no-untyped-def]
+    ws.path("memory-policy.json").write_text(json.dumps(values))
+
+
+def test_auto_resume_is_off_unless_the_policy_turns_it_on(tmp_path: Path) -> None:
+    from tn_assist.apply import due_auto_resumes
+
+    ws = make_workspace(tmp_path)
+    arrive(ws, "oi")
+    _taken_over(ws, ANA, "2026-10-17T10:00:00Z")
+    assert due_auto_resumes(ws, T0 + timedelta(days=3)) == []
+    assert load_state(ws, ANA).state is ContactState.PAUSED
+
+
+def test_a_takeover_is_handed_back_after_the_minutes_without_a_person_and_the_people_are_told(
+    tmp_path: Path,
+) -> None:
+    from tn_assist.apply import due_auto_resumes
+
+    ws = make_workspace(tmp_path)
+    _set_policy(ws, auto_resume_after_minutes=30)
+    arrive(ws, "oi")
+    _taken_over(ws, ANA, "2026-10-17T11:40:00Z")
+    assert due_auto_resumes(ws, T0 + timedelta(minutes=9)) == []  # 29 minutes since the person
+    assert load_state(ws, ANA).state is ContactState.PAUSED
+    notices = due_auto_resumes(ws, T0 + timedelta(minutes=10))
+    assert kinds(notices) == ["NotifyAdmins", "NotifySelfChat"] and "30 minutos" in notices[0].text
+    record = load_state(ws, ANA)
+    assert record.state is ContactState.ACTIVE and not record.human_takeover
+    assert due_auto_resumes(ws, T0 + timedelta(days=1)) == []  # once
+
+
+def test_a_new_message_from_a_person_restarts_the_wait(tmp_path: Path) -> None:
+    from tn_assist.apply import due_auto_resumes
+
+    ws = make_workspace(tmp_path)
+    _set_policy(ws, auto_resume_after_minutes=30)
+    arrive(ws, "oi")
+    _taken_over(ws, ANA, "2026-10-17T11:00:00Z")
+    _taken_over(ws, ANA, "2026-10-17T11:50:00Z")  # the attendant wrote again
+    assert due_auto_resumes(ws, T0 + timedelta(minutes=15)) == []  # 25 minutes since the last one
+    assert load_state(ws, ANA).state is ContactState.PAUSED
+    assert due_auto_resumes(ws, T0 + timedelta(minutes=20)) != []  # 30 minutes
+
+
+def test_only_a_human_takeover_is_ever_handed_back(tmp_path: Path) -> None:
+    from tn_assist.apply import due_auto_resumes
+    from tn_assist.state import pause_unless_opted_out, save_state
+
+    ws = make_workspace(tmp_path)
+    _set_policy(ws, auto_resume_after_minutes=30)
+    arrive(ws, "oi")
+    pause_unless_opted_out(ws, ANA, reason="paused_by_admin", at="2026-10-17T08:00:00Z")
+    assert (
+        due_auto_resumes(ws, T0) == []
+    )  # an administrator paused it: only an administrator resumes
+    save_state(
+        ws,
+        ANA,
+        replace(load_state(ws, ANA), state=ContactState.DO_NOT_CONTACT, human_takeover=True),
+    )
+    assert due_auto_resumes(ws, T0) == []  # a customer who asked to stop is never brought back
+    assert load_state(ws, ANA).state is ContactState.DO_NOT_CONTACT
+
+
+def test_a_value_under_the_minimum_or_not_a_number_means_off(tmp_path: Path) -> None:
+    from tn_assist.apply import due_auto_resumes
+
+    for bad in (1, 0, -5, "30", True, None):
+        ws = make_workspace(tmp_path / str(repr(bad)).replace("'", ""))
+        _set_policy(ws, auto_resume_after_minutes=bad)
+        arrive(ws, "oi")
+        _taken_over(ws, ANA, "2026-10-17T08:00:00Z")
+        assert due_auto_resumes(ws, T0) == [], bad

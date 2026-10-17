@@ -106,6 +106,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "pt": "Lembrete: {name} ({number}) espera uma pessoa há {hours} horas.",
         "en": "Reminder: {name} ({number}) has been waiting for a person for {hours} hours.",
     },
+    "auto_resumed": {
+        "pt": "O atendimento de {name} ({number}) voltou para o atendente virtual: nenhuma pessoa escreveu há {minutes} minutos.",
+        "en": "{name} ({number}) is back with the virtual attendant: no person has written for {minutes} minutes.",
+    },
     "contact_paused": {
         "pt": (
             "Pausei o atendimento de {number}. Motivo: {reason}. "

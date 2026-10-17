@@ -13,6 +13,10 @@ The knowledge does not answer (price, stock, deadline, promise, policy), the cus
 
 Any message that a person writes to a customer from the connected phone or WhatsApp Web pauses the assistant for that customer (state `paused`). It stays paused until someone resumes it. There is no automatic resume.
 
+## Giving it back by itself
+
+If `auto_resume_after_minutes` is set in `memory-policy.json` (off by default, minimum 5), a conversation that a person took over comes back to the assistant after that many minutes without a message from a person, and the administrators and the number's own chat get one notice. It never applies to an administrator's pause, to a conversation still waiting for a person (state handoff) or to a customer who asked to stop. `tn_assist reminders` does it, together with the escalation reminders.
+
 ## Who can resume
 
 An administrator (`/retomar` from their number) or an attendant (`/retomar` in the number's chat with itself). Never the customer, never you. Resume by the position shown in `/fila` or by the customer's number.

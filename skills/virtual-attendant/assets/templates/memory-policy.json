@@ -7,5 +7,6 @@
   "episodes_in_pack": 2,
   "reply_cap_per_hour": 6,
   "reply_cap_per_day": 30,
-  "handoff_reminder_hours": 4
+  "handoff_reminder_hours": 4,
+  "auto_resume_after_minutes": null
 }

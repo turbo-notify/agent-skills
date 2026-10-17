@@ -271,12 +271,12 @@ CONSOLE_STRINGS: dict[str, dict[str, str]] = {
         "pt": (
             "Orçamento do pacote do cliente: {contact} tokens\nOrçamento do pacote do administrador: {admin} tokens\n"
             "Mensagens guardadas por {days} dias\nRespostas por hora: {per_hour}, por dia: {per_day}\n"
-            "Lembrete de transferência: {reminder} horas\nPropostas de melhoria: {proposals}"
+            "Lembrete de transferência: {reminder} horas\nDevolver ao atendente virtual sozinho: {resume}\nPropostas de melhoria: {proposals}"
         ),
         "en": (
             "Customer pack budget: {contact} tokens\nAdmin pack budget: {admin} tokens\n"
             "Messages kept for {days} days\nReplies per hour: {per_hour}, per day: {per_day}\n"
-            "Hand-off reminder: {reminder} hours\nImprovement proposals: {proposals}"
+            "Hand-off reminder: {reminder} hours\nGive a conversation back by itself: {resume}\nImprovement proposals: {proposals}"
         ),
     },
     "digest_text": {
