@@ -17,6 +17,20 @@ ROOT = Path(__file__).resolve().parents[1]
 NAME = "turbo-notify"
 SKILLS = "./skills"
 _SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
+HELPER_INIT = "skills/virtual-attendant/scripts/tn_assist/__init__.py"
+# (file, pattern with the version in group 2) for the two places that carry a copy of the version
+_COPIES = (
+    (
+        HELPER_INIT,
+        re.compile(r'^(__version__\s*=\s*")([^"]+)(")', re.MULTILINE),
+        "helper __version__",
+    ),
+    (
+        "pyproject.toml",
+        re.compile(r'^(version\s*=\s*")([^"]+)(")', re.MULTILINE),
+        "pyproject version",
+    ),
+)
 
 
 def _read(path: str) -> dict:  # type: ignore[type-arg]
@@ -64,6 +78,11 @@ def problems() -> list[str]:
         found.append(f"plugin skills path is {plugin.get('skills')}, expected {SKILLS}")
     if entry.get("source") != "./":
         found.append("the marketplace entry must point at the repository root")
+    for path, pattern, label in _COPIES:
+        match = pattern.search((ROOT / path).read_text(encoding="utf-8"))
+        value = match.group(2) if match else "missing"
+        if value != ver:
+            found.append(f"{label} is {value}, VERSION is {ver}")
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     if not re.search(rf"^## {re.escape(ver)}\b", changelog, re.MULTILINE):
         found.append(f"CHANGELOG.md has no section for {ver}")
@@ -81,6 +100,9 @@ def sync(released: str | None) -> None:
     root = _read("plugin.json")
     root["version"] = ver
     _write("plugin.json", root)
+    for path, pattern, _label in _COPIES:
+        text = (ROOT / path).read_text(encoding="utf-8")
+        (ROOT / path).write_text(pattern.sub(rf"\g<1>{ver}\g<3>", text, count=1), encoding="utf-8")
     latest = _read("latest.json")
     latest["version"] = ver
     if released:

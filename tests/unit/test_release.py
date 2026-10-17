@@ -17,6 +17,10 @@ def copy_repo(tmp_path: Path) -> Path:
     for name in ("VERSION", "latest.json", "plugin.json", "CHANGELOG.md"):
         shutil.copy(ROOT / name, tmp_path / name)
     shutil.copytree(ROOT / ".claude-plugin", tmp_path / ".claude-plugin")
+    shutil.copy(ROOT / "pyproject.toml", tmp_path / "pyproject.toml")
+    init = tmp_path / release.HELPER_INIT
+    init.parent.mkdir(parents=True)
+    shutil.copy(ROOT / release.HELPER_INIT, init)
     return tmp_path
 
 
@@ -124,3 +128,23 @@ def test_the_customer_agent_has_no_tools() -> None:
     text = (ROOT / "agents/contact-attendant.md").read_text()
     front = text.split("---")[1]
     assert "tools: []" in front
+
+
+def test_the_helper_reports_the_released_version() -> (
+    None
+):  # review: the notice compared it to latest.json
+    from tn_assist import __version__
+
+    assert __version__ == (ROOT / "VERSION").read_text().strip()
+
+
+def test_check_catches_a_helper_that_was_not_bumped_and_sync_fixes_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = copy_repo(tmp_path)
+    monkeypatch.setattr(release, "ROOT", repo)
+    (repo / "VERSION").write_text("0.2.0\n")
+    (repo / "CHANGELOG.md").write_text("# Changelog\n\n## 0.2.0\n\nx\n")
+    assert any("helper __version__" in p for p in release.problems())
+    release.sync(None)
+    assert release.problems() == []
