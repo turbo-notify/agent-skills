@@ -25,7 +25,7 @@ def one_line(text: str) -> str:
 
 
 def clean_fact_value(text: str, limit: int = 300) -> str:
-    """A stored fact is one plain line: no control characters, markup, list lead or provenance mark."""
+    """A stored fact is one plain line: no control characters, markup or provenance mark."""
     text = _CONTROL.sub(" ", text)
     text = " ".join(text.split())
     text = _LIST_LEAD.sub("", text)

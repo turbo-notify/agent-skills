@@ -63,9 +63,11 @@ def test_only_public_sources_reach_the_contact_role(tmp_path: Path) -> None:
     r.classify("catalogo", SourceClass.PUBLIC, confirmed=True)
     r.classify("crm", SourceClass.INTERNAL, confirmed=True)
     r.classify("financeiro", SourceClass.ADMIN_ONLY, confirmed=True)
-    names = lambda role: sorted(
-        s.name for s in r.allowed_for(role, assisted=False, in_session=False)
-    )  # noqa: E731
+
+    def names(role: str) -> list[str]:
+        found = r.allowed_for(role, assisted=False, in_session=False)  # type: ignore[arg-type]
+        return sorted(s.name for s in found)
+
     assert names("contact") == []  # snapshot only; no live tool for a contact outside a session
     assert names("attendant") == ["catalogo", "crm"]
     assert names("admin") == ["catalogo", "crm", "financeiro"]
