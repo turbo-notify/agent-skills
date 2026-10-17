@@ -238,6 +238,8 @@ def ingest(ws: Workspace, events: Sequence[Event], now: datetime) -> IngestResul
         "last_event_id": newest or cursor_state.get("last_event_id"),
         "last_tick_at": now_iso,
     }
+    if not state["last_event_id"] and cursor_state.get("primed_at"):
+        state["primed_at"] = cursor_state["primed_at"]  # still waiting for the first event
     write_json_atomic(ws.path("cursor.json"), state)
     result.new_cursor = newest
     return result

@@ -97,6 +97,7 @@ def test_mcp_tools_the_skill_names_exist_in_the_real_catalog() -> None:
             if t.split("_")[0]
             in {"list", "get", "send", "reply", "edit", "delete", "react", "mark", "connect"}
         }
+    cited -= {"send_rate_spacing"}  # an error code the instructions name, not a tool
     assert {"list_events", "get_message", "reply_to_message", "send_text", "list_numbers"} <= cited
     assert cited <= real, cited - real
 

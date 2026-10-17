@@ -11,9 +11,9 @@ Run this to catch up with the number. In a session it runs every minute or so; u
 
 ## 2. Work through the queue
 
-Repeat `tn_assist next` until `item` is null. For each item:
+Repeat `tn_assist next --kinds contact,admin,attendant,compaction` until `item` is null. For each item:
 
-1. **Hydrate.** Events carry only a short preview. For each event in `item.hydrate` (same order as `item.message_ids`) call `get_message` with that `message_id` and `number_alias` = the `num_…`, write the full text to a file, and run `tn_assist set-text --item <id> --event <event id> --file <file>`. If the message cannot be read any more, run it with `--unreadable` instead.
+1. **Hydrate.** Events carry only a short preview. For each event in `item.hydrate`, with the message id at the same position of `item.message_ids` (null when unknown: use `--unreadable`), call `get_message` with that `message_id` and `number_alias` = the `num_…`, write the full text to a file, and run `tn_assist set-text --item <id> --event <event id> --file <file>`. If the message cannot be read any more, run it with `--unreadable` instead.
 2. By `item.kind`:
    - `contact`: [contact-turn.md](contact-turn.md).
    - `admin` or `attendant`: run `tn_assist run-console --item <id>`. Commands are carried out by the helper without a model. If `needs_model` is true, there is free text: see [admin-console.md](admin-console.md).
@@ -21,7 +21,7 @@ Repeat `tn_assist next` until `item` is null. For each item:
 3. Carry out every delivery that `apply` or `run-console` returned, in order:
    - `send`: `send_text` with `number` = `+` and `to`, `text`, `idempotency_key`, `number_alias` = the `num_…`, and `quoted_message_id` = `quote` when the delivery has one. Do not quote anything else: `reply_to_message` is not used, because it would quote the message that was just answered.
    Do not edit text, do not skip, do not add anyone.
-4. If a delivery is refused with a quota, plan or connection error (`payment_required`, `rate_limited`, `number_not_connected`), do not retry. Run `tn_assist report-failure --cause <the error code> --cycle <billing cycle, for example the month>` and deliver the notice it returns. It speaks once per cause and cycle.
+4. If a delivery is refused for pacing (`send_rate_spacing`, `rate_limit_exceeded`, `messages_per_minute_limit_exceeded`) or because the number is reconnecting (`number_not_connected`), wait the "Retry after" seconds (a few for pacing; try again next cycle for a reconnect) and send the same delivery again with the same `idempotency_key`. If it is refused for a quota or plan reason (`payment_required`, `contact_quota_exceeded`, `messages_quota_exceeded`, `feature_not_available`), do not retry: run `tn_assist report-failure --cause <the error code> --cycle <billing cycle, for example the month>` and deliver the notice it returns. It speaks once per cause and cycle.
 
 ## 3. Housekeeping
 

@@ -233,12 +233,14 @@ def test_a_failing_model_is_retried_and_then_the_customer_goes_to_a_person(tmp_p
     harness = FakeHarness()
     harness.fail = 99
     states = []
-    for minute in range(1, 7):
+    # attempts back off (1 min, 5 min, 25 min, 2 h, 2 h): a short model outage must not hand every
+    # customer to a person, so the hand-off comes only after the fifth failed attempt
+    for minute in (1, 2, 7, 32, 152, 272):
         cycle(cfg, api, harness, T0 + timedelta(minutes=minute))
         states.append(load_state(ws, ANA).state)
-    assert states[:3] == [ContactState.ACTIVE] * 3  # three attempts, one per cycle
-    assert states[3] is ContactState.HANDOFF  # then a person, with no further model call
-    assert len(harness.children) == 3
+    assert states[:5] == [ContactState.ACTIVE] * 5
+    assert states[5] is ContactState.HANDOFF  # then a person, with no further model call
+    assert len(harness.children) == 5
     assert any("automatic answer failed" in s[2] for s in api.sends)
 
 
@@ -601,3 +603,30 @@ def test_a_failing_text_fetch_retries_the_item_and_never_stores_a_missing_text(
     cycle(cfg, api, harness, T0 + timedelta(minutes=5))
     assert [r[2] for r in api.replies] == ["Custa R$ 490."]
     assert "Texto completo" in harness.children[-1].stdin  # the full text, not the preview
+
+
+def test_the_first_message_on_an_account_with_no_events_is_not_skipped(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    config = load_config(ws)
+    config.update({"mode": "auto", "business_name": "Loja Aurora", "harness": "claude-code"})
+    save_config(ws, config)
+    api = FakeApi()
+    cfg = RunnerConfig(ws, "claude-code", api_key=KEY, env={"HOME": "/home/x", "PATH": "/usr/bin"})
+    run_cycle(cfg, api, spawn=FakeHarness(), now=T0, fetch_version=None)  # nothing to prime on
+    api.add(f.inbound_text(preview="oi", created_at="2026-10-17T12:01:00Z"))
+    harness = FakeHarness('{"reply": "Olá!"}')
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    assert [r[2] for r in api.replies] == ["Olá!"]
+
+
+def test_console_answers_survive_a_failing_model_step(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(f.inbound_text(sender=f.OWNER, preview="/status", created_at="2026-10-17T12:01:00Z"))
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=1))
+    assert any(s[1] == f.OWNER for s in api.sends)  # the command's answer went out
+
+
+def test_an_unknown_429_is_waited_out_not_erased() -> None:
+    from tn_assist.runner import classify
+
+    assert classify(ApiError(429, "some_new_limit")) == "pacing"

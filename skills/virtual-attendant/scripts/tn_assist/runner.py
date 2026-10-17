@@ -36,7 +36,7 @@ from tn_assist.config import load_config
 from tn_assist.deliver import expand, outbox_add, outbox_done, outbox_pending, outbox_update
 from tn_assist.events import Event, parse_events
 from tn_assist.i18n import Lang, t
-from tn_assist.ingest import collect_since, ingest
+from tn_assist.ingest import PAGE_LIMIT, CollectResult, collect_since, ingest
 from tn_assist.memory import purge_expired, read_lines_at, set_text_at
 from tn_assist.pack import build_pack
 from tn_assist.paths import ContactKey, Workspace
@@ -58,8 +58,12 @@ from tn_assist.workflow import apply_decision_text, run_console_item
 
 EVENT_TYPES = ("message.received", "message.replied", "message.sent")
 KINDS = ("contact", "admin", "attendant", "compaction")
-MAX_ATTEMPTS = 3
+MAX_ATTEMPTS = 5
 RETRY_DELAY_SECONDS = 60
+RETRY_BACKOFF = (
+    5  # 1 min, 5 min, 25 min, then 2 h: a model outage must not hand everyone to a person
+)
+RETRY_DELAY_CAP_S = 7200
 LEASE_SECONDS = 900
 
 
@@ -103,6 +107,8 @@ def classify(error: ApiError) -> str:
         return "daily"
     if error.code in QUOTA_CODES or error.status in (402, 409):
         return "quota"
+    if error.status == 429:
+        return "pacing"  # a limit nobody named yet still heals by waiting: never erase the answer
     return "drop"
 
 
@@ -267,12 +273,18 @@ def _attempt(api: Api, number_ref: str, op: dict[str, Any]) -> None:
 
 
 def _execute(
-    cfg: RunnerConfig, api: Api, now: datetime, report: CycleReport, sleep: Sleep = time.sleep
+    cfg: RunnerConfig,
+    api: Api,
+    now: datetime,
+    report: CycleReport,
+    sleep: Sleep = time.sleep,
+    beat: Callable[[], None] = lambda: None,
 ) -> int:
     """Try every delivery that is due. Returns how many were refused for good (a notice follows)."""
     ws = cfg.workspace
     refused = 0
     for op in outbox_pending(ws):
+        beat()  # a long outbox with pauses must not let another runner take the lock
         if not op.get("to") or not op.get("text"):
             outbox_done(ws, op)  # a delivery written by an older version: nothing sensible to send
             _log(ws, "delivery_discarded", reason="old_format")
@@ -388,7 +400,10 @@ def _process(
     actions: list[Action] = []
     if item.kind in ("admin", "attendant"):
         outcome = run_console_item(ws, item, now)
-        actions += outcome.actions
+        if outcome.actions:
+            # the commands already ran and are marked handled: their answers are kept now, so a
+            # failing model step later cannot lose them
+            outbox_add(ws, expand(ws, outcome.actions, seed=item.id), now=now)
         if outcome.needs_model:
             raw = _decide(cfg, item, spawn, now, report)
             actions += apply_decision_text(ws, item, raw, now)
@@ -443,16 +458,28 @@ def run_cycle(
         report.busy = True
         return report
     try:
-        _execute(cfg, api, now, report, sleep)
+        _execute(cfg, api, now, report, sleep, lock.heartbeat)
         cursor_state = read_json(ws.path("cursor.json"), {})
         cursor = cursor_state.get("last_event_id") if isinstance(cursor_state, dict) else None
-        found = collect_since(api.events, cursor)
+        primed_at = cursor_state.get("primed_at") if isinstance(cursor_state, dict) else None
+        if cursor is None and primed_at:
+            # started on an empty account: whatever arrived since then is new, not history
+            page = api.events({"limit": str(PAGE_LIMIT)})
+            found = CollectResult(
+                [e for e in page if e.created_at >= str(primed_at)], page[0].id if page else None
+            )
+            cursor = "primed"  # the stream is now followed; ingest writes the real cursor
+        else:
+            found = collect_since(api.events, cursor)
         if cursor is None:
-            if found.newest_id:
-                write_json_atomic(
-                    ws.path("cursor.json"),
-                    {"last_event_id": found.newest_id, "last_tick_at": utc_iso(now)},
-                )
+            write_json_atomic(
+                ws.path("cursor.json"),
+                {
+                    "last_event_id": found.newest_id,
+                    "last_tick_at": utc_iso(now),
+                    **({} if found.newest_id else {"primed_at": utc_iso(now)}),
+                },
+            )
             report.primed = True
             return report
         result = ingest(ws, found.events, now)
@@ -489,7 +516,11 @@ def run_cycle(
                     error=type(error).__name__,
                     attempts=item.attempts,
                 )
-                release_for_retry(ws, item.id, now, RETRY_DELAY_SECONDS)
+                delay = min(
+                    RETRY_DELAY_SECONDS * RETRY_BACKOFF ** max(0, item.attempts - 1),
+                    RETRY_DELAY_CAP_S,
+                )
+                release_for_retry(ws, item.id, now, delay)
             lock.heartbeat()
         reminders = due_reminders(ws, now)
         if reminders:

@@ -111,16 +111,20 @@ def _item_json(ws: Workspace, item: WorkItem) -> dict[str, Any]:
         )
         else []
     )
-    wanted = set(item.event_ids)
-    message_ids = [ln.message_id for ln in lines if ln.event_id in wanted and ln.message_id]
+    by_event = {ln.event_id: ln for ln in lines}
+    hydrate = (
+        [e for e in item.event_ids if e not in item.hydrated_ids]
+        if item.kind in ("contact", "admin", "attendant")
+        else []
+    )
+    # the same order as ``hydrate``, one entry each (null when the line has no message id)
+    message_ids = [by_event[e].message_id if e in by_event else None for e in hydrate]
     return {
         "id": item.id,
         "kind": item.kind,
         "contact": item.contact,
         "event_ids": list(item.event_ids),
-        "hydrate": [e for e in item.event_ids if e not in item.hydrated_ids]
-        if item.kind in ("contact", "admin", "attendant")
-        else [],
+        "hydrate": hydrate,
         "message_ids": message_ids,
         "number_ref": ws.num_id,
     }
