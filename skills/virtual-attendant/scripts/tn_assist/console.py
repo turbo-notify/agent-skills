@@ -739,9 +739,9 @@ def _mode(ws: Workspace, cmd: Command) -> CommandResult:
     lang = _lang(ws)
     word = _fold(cmd.args[0]) if cmd.args else ""
     config = load_config(ws)
-    if word in ("assistido", "assist", "sombra", "shadow"):
+    if word in ("assistido", "assist", "assisted", "sombra", "shadow"):
         config["mode"] = "assist"
-    elif word in ("automatico", "auto", "ativo", "live"):
+    elif word in ("automatico", "auto", "automatic", "ativo", "live"):
         config["mode"] = "auto"
     else:
         return CommandResult(t("mode_help", lang))

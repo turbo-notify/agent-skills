@@ -368,6 +368,10 @@ def test_mode_and_language_commands(tmp_path: Path) -> None:
     assert load_config(ws)["mode"] == "auto"
     run(ws, "/mode assist")
     assert load_config(ws)["mode"] == "assist"
+    run(ws, "/mode automatic")
+    assert load_config(ws)["mode"] == "auto"
+    run(ws, "/mode assisted")  # the spelling the customer docs show
+    assert load_config(ws)["mode"] == "assist"
     assert "assistido" in run(ws, "/modo nada").text or "automático" in run(ws, "/modo nada").text
     run(ws, "/idioma en")
     assert load_config(ws)["lang"] == "en"
