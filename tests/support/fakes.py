@@ -18,6 +18,7 @@ class FakeApi:
         self.replies: list[tuple[str, str, str, str]] = []
         self.sends: list[tuple[str, str, str, str]] = []
         self.errors: list[ApiError] = []
+        self.reply_error: ApiError | None = None  # every reply fails with this, until cleared
         self.event_calls = 0
 
     def add(self, *raw: dict[str, Any]) -> None:
@@ -46,6 +47,8 @@ class FakeApi:
             raise self.errors.pop(0)
 
     def reply(self, number_ref: str, message_id: str, text: str, key: str) -> None:
+        if self.reply_error is not None:
+            raise self.reply_error
         self._maybe_fail()
         self.replies.append((number_ref, message_id, text, key))
 

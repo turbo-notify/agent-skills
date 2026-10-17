@@ -260,6 +260,8 @@ def test_a_transient_delivery_failure_is_retried_with_the_same_key(tmp_path: Pat
     cycle(cfg, api, harness, T0 + timedelta(minutes=1))
     assert api.replies == []
     cycle(cfg, api, harness, T0 + timedelta(minutes=2))
+    assert api.replies == []  # held back for a while, not hammered
+    cycle(cfg, api, harness, T0 + timedelta(minutes=8))
     assert [(r[2], r[3]) for r in api.replies] == [("Olá!", e["id"])]
 
 
@@ -396,3 +398,77 @@ def test_item_lease_helper_still_works_after_runner_cycles(tmp_path: Path) -> No
     ws, cfg, api = setup(tmp_path)
     enqueue(ws, WorkItem.new("contact", f.ANA, ("evt_z",), T0))
     assert lease_next(ws, ("contact",), ttl_s=60, now=T0) is not None
+
+
+def _one_reply(tmp_path: Path):  # type: ignore[no-untyped-def]
+    ws, cfg, api = setup(tmp_path)
+    e = f.inbound_text(preview="oi", created_at="2026-10-17T12:01:00Z")
+    api.add(e)
+    return ws, cfg, api, e
+
+
+def test_a_pacing_refusal_waits_for_retry_after_and_goes_through_in_the_same_cycle(
+    tmp_path: Path,
+) -> None:
+    ws, cfg, api, e = _one_reply(tmp_path)
+    api.errors = [ApiError(429, "send_rate_spacing", 1)]
+    slept: list[float] = []
+    report = cycle(
+        cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1), sleep=slept.append
+    )
+    assert slept == [pytest.approx(1.3)] and report.sent == 1
+    assert [r[2] for r in api.replies] == ["Olá!"]
+    assert (
+        json.loads((ws.root / "stats.json").read_text())
+        if (ws.root / "stats.json").exists()
+        else True
+    )
+
+
+def test_pacing_that_does_not_clear_is_held_not_reported_as_a_quota_problem(tmp_path: Path) -> None:
+    ws, cfg, api, e = _one_reply(tmp_path)
+    api.errors = [ApiError(429, "send_rate_spacing", 1)] * 4
+    slept: list[float] = []
+    cycle(cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1), sleep=slept.append)
+    assert api.replies == [] and len(slept) == 3
+    assert not any(
+        "send_rate_spacing" in s[2] for s in api.sends
+    )  # nobody is told it is a quota issue
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=8), sleep=slept.append)
+    assert [r[2] for r in api.replies] == ["Olá!"]
+
+
+def test_a_daily_limit_holds_the_delivery_for_the_hour_or_the_retry_after(tmp_path: Path) -> None:
+    ws, cfg, api, e = _one_reply(tmp_path)
+    api.errors = [ApiError(429, "warmup_limit_exceeded", 7200)]
+    cycle(cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1))
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=90))
+    assert api.replies == []
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(hours=3))
+    assert [r[2] for r in api.replies] == ["Olá!"]
+
+
+def test_a_delivery_that_never_goes_through_is_dropped_after_six_hours(tmp_path: Path) -> None:
+    ws, cfg, api, e = _one_reply(tmp_path)
+    api.reply_error = ApiError(429, "reply_ratio_too_low")
+    cycle(cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1))
+    for hours in (2, 4, 6, 8):
+        cycle(cfg, api, FakeHarness(), T0 + timedelta(hours=hours))
+    assert api.replies == []
+    held = [p for p in (ws.root / "outbox").glob("*.json") if '"op": "reply"' in p.read_text()]
+    assert held == []  # past six hours the reply is dropped, not retried for ever
+
+
+def test_a_quota_429_is_a_quota_problem_not_pacing(tmp_path: Path) -> None:
+    ws, cfg, api, e = _one_reply(tmp_path)
+    api.errors = [ApiError(429, "messages_quota_exceeded")]
+    cycle(cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1))
+    assert api.replies == [] and any("messages_quota_exceeded" in s[2] for s in api.sends)
+
+
+def test_other_client_errors_are_dropped_without_a_notice(tmp_path: Path) -> None:
+    ws, cfg, api, e = _one_reply(tmp_path)
+    api.errors = [ApiError(404, "message_not_found")]
+    cycle(cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1))
+    assert api.replies == [] and api.sends == []
+    assert not list((ws.root / "outbox").glob("*.json"))

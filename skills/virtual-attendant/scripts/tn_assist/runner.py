@@ -18,7 +18,7 @@ import urllib.parse
 import urllib.request
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -32,7 +32,7 @@ from tn_assist.apply import (
     report_failure,
 )
 from tn_assist.config import load_config
-from tn_assist.deliver import expand, outbox_add, outbox_done, outbox_pending
+from tn_assist.deliver import expand, outbox_add, outbox_done, outbox_pending, outbox_update
 from tn_assist.events import Event, parse_events
 from tn_assist.i18n import Lang, t
 from tn_assist.ingest import collect_since, ingest
@@ -60,15 +60,44 @@ KINDS = ("contact", "admin", "attendant", "compaction")
 MAX_ATTEMPTS = 3
 RETRY_DELAY_SECONDS = 60
 LEASE_SECONDS = 900
-QUOTA_CODES = frozenset(
-    {"payment_required", "rate_limit_exceeded", "number_not_connected", "feature_not_available"}
-)
 
 
 class ApiError(Exception):
-    def __init__(self, status: int, code: str = "") -> None:
+    def __init__(self, status: int, code: str = "", retry_after: int | None = None) -> None:
         super().__init__(f"{status} {code}".strip())
-        self.status, self.code = status, code
+        self.status, self.code, self.retry_after = status, code, retry_after
+
+
+# What a refusal means. Pacing and daily limits are the platform's protection against bans: wait
+# and try again. Quota and plan refusals do not heal by waiting: tell the administrators once.
+PACING_CODES = frozenset(
+    {"send_rate_spacing", "rate_limit_exceeded", "messages_per_minute_limit_exceeded",
+     "refresh_rate_limited"}
+)  # fmt: skip
+DAILY_CODES = frozenset(
+    {"warmup_limit_exceeded", "recipients_per_day_limit_exceeded", "duplicate_burst_blocked",
+     "reply_ratio_too_low"}
+)  # fmt: skip
+QUOTA_CODES = frozenset(
+    {"payment_required", "contact_quota_exceeded", "messages_quota_exceeded",
+     "feature_not_available", "number_not_connected", "insufficient_scope"}
+)  # fmt: skip
+PACING_WAIT_CAP_S = 15
+PACING_RETRIES = 3
+HELD_DELAY_S = 3600
+OUTBOX_MAX_AGE_S = 6 * 3600
+
+
+def classify(error: ApiError) -> str:
+    if error.status == 0 or error.status >= 500:
+        return "transient"
+    if error.code in PACING_CODES:
+        return "pacing"
+    if error.code in DAILY_CODES:
+        return "daily"
+    if error.code in QUOTA_CODES or error.status in (402, 409):
+        return "quota"
+    return "drop"
 
 
 class Api(Protocol):
@@ -104,13 +133,17 @@ class RestApi:
             with urllib.request.urlopen(request, timeout=self._timeout) as response:  # noqa: S310
                 raw = response.read()
         except urllib.error.HTTPError as error:
+            retry_after: int | None = None
+            header = error.headers.get("Retry-After") if error.headers else None
+            if header and header.strip().isdigit():
+                retry_after = int(header.strip())
             code = ""
             try:
                 payload = json.loads(error.read() or b"{}")
                 code = str(payload.get("error", "")) if isinstance(payload, dict) else ""
             except ValueError:
                 pass
-            raise ApiError(error.code, code) from error
+            raise ApiError(error.code, code, retry_after) from error
         except (urllib.error.URLError, TimeoutError, OSError) as error:
             raise ApiError(0, "network") from error
         return json.loads(raw) if raw else {}
@@ -226,31 +259,64 @@ def check_harness(harness: str) -> None:
         raise UnsupportedHarness(harness)
 
 
-def _execute(cfg: RunnerConfig, api: Api, now: datetime, report: CycleReport) -> int:
-    """Try every delivery in the outbox. Quota and plan refusals are reported once and dropped."""
+Sleep = Callable[[float], None]
+
+
+def _attempt(api: Api, number_ref: str, op: dict[str, Any]) -> None:
+    if op["op"] == "reply":
+        api.reply(number_ref, op["message_id"], op["text"], op["idempotency_key"])
+    else:
+        api.send(number_ref, op["to"], op["text"], op["idempotency_key"])
+
+
+def _execute(
+    cfg: RunnerConfig, api: Api, now: datetime, report: CycleReport, sleep: Sleep = time.sleep
+) -> int:
+    """Try every delivery that is due. Returns how many were refused for good (a notice follows)."""
     ws = cfg.workspace
-    number_ref = ws.num_id
     refused = 0
     for op in outbox_pending(ws):
-        try:
-            if op["op"] == "reply":
-                api.reply(number_ref, op["message_id"], op["text"], op["idempotency_key"])
-            else:
-                api.send(number_ref, op["to"], op["text"], op["idempotency_key"])
-        except ApiError as error:
-            if error.status == 0 or error.status >= 500:
-                _log(ws, "delivery_retry", status=error.status)
-                continue  # transient: the key makes the retry safe
-            outbox_done(ws, op)
-            refused += 1
-            _log(ws, "delivery_refused", status=error.status, code=error.code)
-            if error.code in QUOTA_CODES or error.status in (402, 409, 429):
-                cause = error.code or str(error.status)
-                notices = report_failure(ws, cause, now.strftime("%Y-%m"), now)
-                outbox_add(ws, expand(ws, notices, seed=f"failure-{cause}"))
+        hold = op.get("not_before")
+        if hold and parse_iso(hold) > now:
             continue
-        outbox_done(ws, op)
-        report.sent += 1
+        waited = 0
+        while True:
+            try:
+                _attempt(api, ws.num_id, op)
+            except ApiError as error:
+                kind = classify(error)
+                if kind == "pacing" and waited < PACING_RETRIES:
+                    pause = error.retry_after if error.retry_after is not None else 2
+                    sleep(min(pause, PACING_WAIT_CAP_S) + 0.3)
+                    waited += 1
+                    continue
+                if kind in ("transient", "pacing", "daily"):
+                    delay = error.retry_after if error.retry_after else HELD_DELAY_S
+                    delay = delay if kind == "daily" else min(max(delay, 30), 300)
+                    queued = parse_iso(op["queued_at"]) if op.get("queued_at") else now
+                    if (now - queued).total_seconds() > OUTBOX_MAX_AGE_S:
+                        outbox_done(ws, op)
+                        _log(ws, "delivery_expired", status=error.status, code=error.code)
+                    else:
+                        outbox_update(
+                            ws,
+                            op,
+                            not_before=utc_iso(now + timedelta(seconds=delay)),
+                            attempts=int(op.get("attempts", 0)) + 1,
+                        )
+                        _log(ws, "delivery_held", status=error.status, code=error.code, kind=kind)
+                    break
+                outbox_done(ws, op)
+                _log(ws, "delivery_refused", status=error.status, code=error.code)
+                if kind == "quota":
+                    refused += 1
+                    cause = error.code or str(error.status)
+                    notices = report_failure(ws, cause, now.strftime("%Y-%m"), now)
+                    outbox_add(ws, expand(ws, notices, seed=f"failure-{cause}"), now=now)
+                break
+            outbox_done(ws, op)
+            report.sent += 1
+            break
     return refused
 
 
@@ -321,7 +387,7 @@ def _process(
         raw = _decide(cfg, item, spawn, now, report)
         actions += apply_decision_text(ws, item, raw, now)
     if actions:
-        outbox_add(ws, expand(ws, actions, seed=item.id))
+        outbox_add(ws, expand(ws, actions, seed=item.id), now=now)
 
 
 def _give_up(cfg: RunnerConfig, item: WorkItem, now: datetime) -> None:
@@ -343,7 +409,7 @@ def _give_up(cfg: RunnerConfig, item: WorkItem, now: datetime) -> None:
                 ),
                 now,
             )
-            outbox_add(ws, expand(ws, actions, seed=item.id))
+            outbox_add(ws, expand(ws, actions, seed=item.id), now=now)
         except InvalidDecision:
             complete(ws, item.id)
         return
@@ -357,6 +423,7 @@ def run_cycle(
     spawn: Spawn = run_child,
     now: datetime | None = None,
     fetch_version: Callable[[], Any] | None = fetch_latest,
+    sleep: Sleep = time.sleep,
 ) -> CycleReport:
     check_harness(cfg.harness)
     ws = cfg.workspace
@@ -367,7 +434,7 @@ def run_cycle(
         report.busy = True
         return report
     try:
-        _execute(cfg, api, now, report)
+        _execute(cfg, api, now, report, sleep)
         cursor_state = read_json(ws.path("cursor.json"), {})
         cursor = cursor_state.get("last_event_id") if isinstance(cursor_state, dict) else None
         found = collect_since(api.events, cursor)
@@ -392,7 +459,7 @@ def run_cycle(
         if result.first_foreign:
             notices.append(NotifyAdmins(t("foreign_notice", lang)))
         if notices:
-            outbox_add(ws, expand(ws, notices, seed=f"ingest-{utc_iso(now)}"))
+            outbox_add(ws, expand(ws, notices, seed=f"ingest-{utc_iso(now)}"), now=now)
         while True:
             item = lease_next(ws, KINDS, ttl_s=LEASE_SECONDS, now=now)
             if item is None:
@@ -417,7 +484,7 @@ def run_cycle(
             lock.heartbeat()
         reminders = due_reminders(ws, now)
         if reminders:
-            outbox_add(ws, expand(ws, reminders, seed=f"reminder-{utc_iso(now)[:13]}"))
+            outbox_add(ws, expand(ws, reminders, seed=f"reminder-{utc_iso(now)[:13]}"), now=now)
         config = load_config(ws)
         notice = version_check(
             ws, __version__, fetch_version, now, harness=config.get("harness"), lang=lang
@@ -429,14 +496,15 @@ def run_cycle(
                 outbox_add(
                     ws,
                     expand(ws, [NotifyAdmins(notice.text(lang))], seed=f"update-{notice.latest}"),
+                    now=now,
                 )
         purge_state = read_json(ws.path("purged.json"), {})
         last_purge = purge_state.get("at") if isinstance(purge_state, dict) else None
         if not last_purge or (now - parse_iso(last_purge)).total_seconds() > 86_400:
             purge_expired(ws, now)
             write_json_atomic(ws.path("purged.json"), {"at": utc_iso(now)})
-        if _execute(cfg, api, now, report):
-            _execute(cfg, api, now, report)  # a refusal queued a notice; send it in this cycle
+        if _execute(cfg, api, now, report, sleep):
+            _execute(cfg, api, now, report, sleep)  # a refusal queued a notice; send it now
         _log(
             ws,
             "cycle",

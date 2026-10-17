@@ -8,6 +8,7 @@ the work item, the recipient and the text, so a retry after a crash sends nothin
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 from typing import Any
 
 from tn_assist.admins import Registry
@@ -17,6 +18,7 @@ from tn_assist.i18n import Lang, t
 from tn_assist.memory import Card
 from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
 from tn_assist.store import read_json, write_json_atomic
+from tn_assist.timeutil import utc_iso
 
 
 def _key(seed: str, to: str, text: str) -> str:
@@ -84,10 +86,17 @@ def expand(ws: Workspace, actions: list[Action], *, seed: str) -> list[dict[str,
 # --- outbox: deliveries that must survive a crash or a failed call ----------------------------
 
 
-def outbox_add(ws: Workspace, ops: list[dict[str, Any]]) -> None:
+def outbox_add(ws: Workspace, ops: list[dict[str, Any]], *, now: datetime | None = None) -> None:
     """Write each delivery down before trying it; the idempotency key makes a retry safe."""
+    stamp = utc_iso(now or datetime.now(timezone.utc))
     for op in ops:
-        write_json_atomic(ws.path("outbox", f"{op['idempotency_key']}.json"), op)
+        path = ws.path("outbox", f"{op['idempotency_key']}.json")
+        if not path.exists():
+            write_json_atomic(path, {**op, "queued_at": stamp, "attempts": 0})
+
+
+def outbox_update(ws: Workspace, op: dict[str, Any], **changes: Any) -> None:
+    write_json_atomic(ws.path("outbox", f"{op['idempotency_key']}.json"), {**op, **changes})
 
 
 def outbox_pending(ws: Workspace) -> list[dict[str, Any]]:
