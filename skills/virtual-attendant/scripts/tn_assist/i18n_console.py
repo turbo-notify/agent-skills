@@ -297,6 +297,10 @@ CONSOLE_STRINGS: dict[str, dict[str, str]] = {
         "pt": "O assistente está pausado. Só um administrador pode enviar agora.",
         "en": "The assistant is paused. Only an admin can send right now.",
     },
+    "suggest_command": {
+        "pt": "Para fazer isso, envie você mesmo: {command}",
+        "en": "To do this, send it yourself: {command}",
+    },
     "send_done": {"pt": "Enviando para {name}.", "en": "Sending to {name}."},
     "send_unknown": {
         "pt": "Não existe o rascunho {n}. Veja /fila.",

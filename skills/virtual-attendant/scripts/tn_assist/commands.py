@@ -142,6 +142,20 @@ def parse_command(text: str) -> Command | None:
     return Command(name, tuple(tail.split()), stripped, tail)
 
 
+_READ_ONLY = frozenset(
+    {"help", "status", "queue", "digest", "contact", "thread", "contacts", "admins", "policy"}
+)
+
+
+def is_read_only(cmd: Command) -> bool:
+    """Commands that change nothing. Only these may run because a model suggested them."""
+    if cmd.name in _READ_ONLY:
+        return True
+    if cmd.name == "kb":
+        return not (cmd.args and _fold(cmd.args[0]) in _REMOVE)
+    return cmd.name == "sources" and not cmd.args
+
+
 def authorize(cmd: Command, role: Role) -> bool:
     return role in AUTHORIZATION.get(cmd.name, frozenset())
 

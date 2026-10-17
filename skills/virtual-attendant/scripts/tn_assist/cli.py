@@ -35,7 +35,7 @@ from tn_assist.apply import (
     parse_decision,
     report_failure,
 )
-from tn_assist.commands import authorize, parse_command
+from tn_assist.commands import authorize, is_read_only, parse_command
 from tn_assist.config import SCHEMA_VERSION, load_config, save_config
 from tn_assist.console import capture_text, forget_contact, queue_entries, run_command
 from tn_assist.deliver import expand
@@ -303,10 +303,15 @@ def cmd_apply(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
         actor = item.contact or "self"
         to = actor if item.kind == "admin" else "self"
         if decision.command:
+            # The model read text written by customers. It may only run what changes nothing;
+            # anything else goes back to the person as a command they must send themselves.
             cmd = parse_command(decision.command)
             if cmd is not None and authorize(cmd, role):  # type: ignore[arg-type]
-                result = run_command(ws, role, actor, cmd, now)  # type: ignore[arg-type]
-                actions += [Say(to, result.text), *result.actions]
+                if is_read_only(cmd):
+                    result = run_command(ws, role, actor, cmd, now)  # type: ignore[arg-type]
+                    actions += [Say(to, result.text), *result.actions]
+                else:
+                    actions.append(Say(to, t("suggest_command", _lang(ws), command=cmd.raw)))
         if decision.reply:
             actions.append(Say(to, decision.reply))
     if not args.keep:

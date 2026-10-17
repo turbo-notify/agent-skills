@@ -435,3 +435,57 @@ def test_a_long_conversation_queues_a_compaction_that_the_loop_can_run(tmp_path:
     )
     assert code == 0 and out["deliveries"] == []
     assert list((tmp_path / f.ORG / f.NUM / "contacts" / f.ANA / "episodes").glob("*.md"))
+
+
+def _admin_item(
+    tmp_path: Path, text: str = "pode apagar a Ana?"
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    init(tmp_path)
+    run(tmp_path, "cursor", "--set", "evt_" + "0" * 32)
+    event = f.inbound_text(sender=f.OWNER, preview=text)
+    run(tmp_path, "ingest", "--file", write(tmp_path / "e.json", f.payload(event)), "--now", NOW)
+    _, leased = run(tmp_path, "next", "--kinds", "admin", "--now", NOW)
+    return leased["item"], event
+
+
+def _apply_model_command(tmp_path: Path, command: str) -> dict[str, Any]:
+    item, _ = _admin_item(tmp_path)
+    decision = tmp_path / "d.json"
+    decision.write_text(json.dumps({"reply": "ok", "command": command}))
+    code, out = run(
+        tmp_path, "apply", "--item", item["id"], "--decision-file", str(decision), "--now", NOW
+    )
+    assert code == 0
+    return out
+
+
+def test_a_model_proposed_command_that_changes_something_is_only_a_suggestion(
+    tmp_path: Path,
+) -> None:  # security review
+    ws_root = tmp_path / f.ORG / f.NUM
+    for command in (
+        f"/esquecer {f.ANA}",
+        f"/admin add {f.BRUNO}",
+        f"/admin remover {f.OWNER}",
+        "/modo auto",
+        "/pausar",
+        "/idioma en",
+        "/kb remover faq",
+        "/confirmar 1234",
+    ):
+        out = _apply_model_command(tmp_path / command.replace("/", "_").replace(" ", "-"), command)
+        texts = " ".join(o["text"] for o in out["deliveries"])
+        assert "envie você mesmo" in texts or command == "/confirmar 1234", command
+    for folder in tmp_path.iterdir():
+        cfg = json.loads((folder / f.ORG / f.NUM / "config.json").read_text())
+        assert cfg["mode"] == "assist" and cfg["lang"] == "pt" and cfg["paused"] is False
+        assert (
+            json.loads((folder / f.ORG / f.NUM / "admins.json").read_text())["admins"][0]["number"]
+            == f.OWNER
+        )
+    assert ws_root.exists() is False
+
+
+def test_a_model_proposed_read_only_command_runs(tmp_path: Path) -> None:
+    out = _apply_model_command(tmp_path, "/status")
+    assert any("Modo" in o["text"] for o in out["deliveries"])
