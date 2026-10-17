@@ -4,7 +4,15 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from tests.support.workspace import make_workspace
-from tn_assist.queue import WorkItem, complete, enqueue, lease_next, pending_count
+from tn_assist.queue import (
+    WorkItem,
+    complete,
+    enqueue,
+    lease_next,
+    mark_handled,
+    mark_hydrated,
+    pending_count,
+)
 
 T0 = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
 
@@ -72,3 +80,18 @@ def test_event_ids_per_item_are_capped(tmp_path: Path) -> None:  # security revi
     leased = lease_next(ws, ("contact",), ttl_s=60, now=T0)
     assert leased is not None and len(leased.event_ids) == MAX_EVENT_IDS
     assert leased.event_ids[-1] == "evt_00599"
+
+
+def test_a_reclaimed_lease_keeps_order_and_what_was_already_done(tmp_path: Path) -> None:  # review
+    ws = make_workspace(tmp_path)
+    enqueue(ws, item("admin", None, "e1", "e2"))
+    leased = lease_next(ws, ("admin",), ttl_s=60, now=T0)
+    assert leased is not None
+    mark_handled(ws, leased.id, "e1")
+    mark_hydrated(ws, leased.id, "e1")
+    enqueue(ws, item("admin", None, "e3"))  # a new message while the first batch is leased
+    later = T0 + timedelta(seconds=120)
+    again = lease_next(ws, ("admin",), ttl_s=60, now=later)
+    assert again is not None
+    assert again.event_ids == ("e1", "e2", "e3")  # oldest first, so the newest is still last
+    assert "e1" in again.handled_ids and "e1" in again.hydrated_ids  # a command is not run twice

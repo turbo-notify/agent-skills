@@ -125,3 +125,10 @@ def test_release_only_removes_own_lock(tmp_path: Path) -> None:
     assert a.acquire(ttl_s=90)
     b.release()
     assert json.loads((tmp_path / "lock").read_text())["pid"] == 1
+
+
+def test_an_empty_lock_file_left_by_a_dead_holder_is_taken_over(tmp_path: Path) -> None:  # review
+    path = tmp_path / "lock"
+    path.write_text("")  # the holder died right after creating the file
+    b = lock(path, Clock(1000.0), pid=2, alive={2})
+    assert b.acquire(ttl_s=90) is True

@@ -341,10 +341,7 @@ def _hydrate(cfg: RunnerConfig, api: Api, item: WorkItem) -> None:
         message_id = line.message_id if line else None
         text: str | None = None
         if message_id:
-            try:
-                text = api.message_text(ws.num_id, message_id)
-            except ApiError:
-                text = None
+            text = api.message_text(ws.num_id, message_id)  # None only when the message is gone
         set_text_at(thread_path(ws, item.kind, item.contact), event_id, text)
         mark_hydrated(ws, item.id, event_id)
 
@@ -483,7 +480,7 @@ def run_cycle(
             try:
                 _process(cfg, api, item, spawn, now, report)
                 report.processed += 1
-            except (ChildFailed, InvalidDecision) as error:
+            except (ChildFailed, InvalidDecision, ApiError) as error:
                 report.failed += 1
                 _log(
                     ws,

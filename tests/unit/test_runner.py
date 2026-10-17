@@ -576,3 +576,28 @@ def test_a_failing_cycle_does_not_end_the_unattended_runner(tmp_path: Path) -> N
     ):
         run_forever(cfg, api)
     assert calls["n"] == 2  # the first failure was logged and the loop went on
+
+
+def test_a_failing_text_fetch_retries_the_item_and_never_stores_a_missing_text(
+    tmp_path: Path,
+) -> None:
+    ws, cfg, api = setup(tmp_path)
+    e = f.inbound_text(preview="quanto custa o plano anual?", created_at="2026-10-17T12:01:00Z")
+    api.add(e)
+    api.texts[e["data"]["id"]] = "Texto completo da pergunta sobre o plano anual."
+    original = api.message_text
+    calls = {"n": 0}
+
+    def flaky(number_ref: str, message_id: str):  # type: ignore[no-untyped-def]
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ApiError(502, "bad_gateway")
+        return original(number_ref, message_id)
+
+    api.message_text = flaky  # type: ignore[method-assign]
+    harness = FakeHarness('{"reply": "Custa R$ 490."}')
+    first = cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    assert first.failed == 1 and api.replies == []
+    cycle(cfg, api, harness, T0 + timedelta(minutes=5))
+    assert [r[2] for r in api.replies] == ["Custa R$ 490."]
+    assert "Texto completo" in harness.children[-1].stdin  # the full text, not the preview

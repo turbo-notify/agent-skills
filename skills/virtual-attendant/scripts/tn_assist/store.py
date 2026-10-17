@@ -136,7 +136,10 @@ class WorkspaceLock:
             try:
                 fd = os.open(str(self._path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, _FILE_MODE)
             except FileExistsError:
-                held = read_json(self._path, None)
+                try:
+                    held = read_json(self._path, None)
+                except ValueError:
+                    held = None  # a lock file the dead holder left half written
                 if isinstance(held, dict) and not self._stale(held):
                     return False
                 with contextlib.suppress(FileNotFoundError):

@@ -90,17 +90,32 @@ def _leased_dir(ws: Workspace) -> Path:
     return ws.path("queue", "leased")
 
 
+def _union(first: tuple[str, ...], second: tuple[str, ...]) -> tuple[str, ...]:
+    return first + tuple(e for e in second if e not in first)
+
+
 def _merge(old: WorkItem, new: WorkItem) -> WorkItem:
-    ids = old.event_ids + tuple(e for e in new.event_ids if e not in old.event_ids)
+    """``old`` holds the older messages: they stay first, and what was already done is kept."""
+    ids = _union(old.event_ids, new.event_ids)
     return replace(
-        old, event_ids=ids[-MAX_EVENT_IDS:], attempts=max(old.attempts, new.attempts)
+        old,
+        event_ids=ids[-MAX_EVENT_IDS:],
+        hydrated_ids=_union(old.hydrated_ids, new.hydrated_ids),
+        handled_ids=_union(old.handled_ids, new.handled_ids),
+        attempts=max(old.attempts, new.attempts),
     )  # older lines stay in the transcript
 
 
-def enqueue(ws: Workspace, item: WorkItem) -> WorkItem:
+def enqueue(ws: Workspace, item: WorkItem, *, older: bool = False) -> WorkItem:
+    """Add ``item`` to the pending item with the same key. ``older`` says that ``item`` holds
+    messages that came BEFORE the pending one (a lease that expired), so they go first."""
     path = _pending_dir(ws) / f"{item.key}.json"
     existing = read_json(path, None)
-    merged = _merge(WorkItem.from_json(existing), item) if isinstance(existing, dict) else item
+    if isinstance(existing, dict):
+        pending = WorkItem.from_json(existing)
+        merged = _merge(item, pending) if older else _merge(pending, item)
+    else:
+        merged = item
     write_json_atomic(path, merged.to_json())
     return merged
 
@@ -126,7 +141,7 @@ def _reclaim_expired(ws: Workspace, now: datetime) -> None:
     for path, data in _leased(ws):
         if parse_iso(data["lease_until"]) <= now:
             item = WorkItem.from_json(data["item"])
-            enqueue(ws, item)
+            enqueue(ws, item, older=True)
             path.unlink()
 
 
