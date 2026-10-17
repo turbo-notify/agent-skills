@@ -441,6 +441,7 @@ def due_auto_resumes(ws: Workspace, now: datetime) -> list[Action]:
         if (
             record.state is not ContactState.PAUSED
             or not record.human_takeover
+            or record.reason != "takeover"  # an administrator's pause after it stays paused
             or not record.since
             or now - parse_iso(record.since) < timedelta(minutes=minutes)
         ):

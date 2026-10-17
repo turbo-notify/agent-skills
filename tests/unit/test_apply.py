@@ -535,3 +535,19 @@ def test_a_value_under_the_minimum_or_not_a_number_means_off(tmp_path: Path) -> 
         arrive(ws, "oi")
         _taken_over(ws, ANA, "2026-10-17T08:00:00Z")
         assert due_auto_resumes(ws, T0) == [], bad
+
+
+def test_an_administrators_pause_after_a_takeover_is_never_handed_back(
+    tmp_path: Path,
+) -> None:  # review
+    from tn_assist.apply import due_auto_resumes
+    from tn_assist.state import pause_unless_opted_out
+
+    ws = make_workspace(tmp_path)
+    _set_policy(ws, auto_resume_after_minutes=30)
+    arrive(ws, "oi")
+    _taken_over(ws, ANA, "2026-10-17T08:00:00Z")
+    pause_unless_opted_out(ws, ANA, reason="paused_by_admin", at="2026-10-17T08:30:00Z")
+    assert load_state(ws, ANA).human_takeover  # the flag survives the pause
+    assert due_auto_resumes(ws, T0) == []
+    assert load_state(ws, ANA).state is ContactState.PAUSED

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Fix: a conversation that an administrator paused after a person had taken it over was handed back by the automatic resume; only a takeover is handed back now.
+
 ## 0.2.0
 
 - A conversation that a person took over can come back to the virtual attendant by itself: set `auto_resume_after_minutes` (off by default, minimum 5) in `memory-policy.json`. The time counts from the last message a person wrote, and the administrators and the number's own chat get a notice.

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "turbo-notify-agent-skills"
-version = "0.2.0"
+version = "0.2.1"
 description = "Agent skills for the Turbo Notify MCP server (development tooling only; the shipped helper has no dependencies)."
 authors = ["Turbo Notify"]
 license = "MIT"
