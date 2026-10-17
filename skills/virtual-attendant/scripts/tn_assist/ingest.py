@@ -242,3 +242,35 @@ def ingest(ws: Workspace, events: Sequence[Event], now: datetime) -> IngestResul
 
 def parse_and_ingest(ws: Workspace, payload: Any, now: datetime) -> IngestResult:
     return ingest(ws, parse_events(payload), now)
+
+
+@dataclass(frozen=True)
+class FetchPlan:
+    done: bool
+    params: dict[str, str]
+    truncated: bool = False
+
+
+def fetch_plan(
+    pages: Sequence[Sequence[Event]], cursor: str | None, limit: int = PAGE_LIMIT
+) -> FetchPlan:
+    """What to ask the platform next, given the pages already read (newest page first).
+
+    The same rule as :func:`collect_since`, for callers that fetch the pages themselves (an agent
+    calling the ``list_events`` tool): a full page means more; stop when the previous cursor is seen
+    or a short page ends the stream.
+    """
+    if not pages:
+        if cursor is None:
+            return FetchPlan(False, {"limit": "1"})
+        return FetchPlan(False, {"limit": str(limit), "ending_before": cursor})
+    if cursor is None:
+        return FetchPlan(True, {})
+    if any(event.id == cursor for page in pages for event in page):
+        return FetchPlan(True, {})
+    last = pages[-1]
+    if len(pages) >= MAX_PAGES:
+        return FetchPlan(True, {}, truncated=True)
+    if len(last) < limit or not last:
+        return FetchPlan(True, {})
+    return FetchPlan(False, {"limit": str(limit), "starting_after": last[-1].id})

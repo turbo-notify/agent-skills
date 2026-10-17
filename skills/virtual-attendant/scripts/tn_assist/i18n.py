@@ -64,6 +64,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "pt": "Rascunho #{n} para {name} ({number}):\n{text}\nPara enviar: /enviar {n}. Para trocar o texto: /enviar {n} <novo texto>.",
         "en": "Draft #{n} for {name} ({number}):\n{text}\nTo send it: /send {n}. To change the text: /send {n} <new text>.",
     },
+    "gap_notice": {
+        "pt": "O assistente ficou fora do ar de {start} até {end}. Mensagens desse período podem ter se perdido: confira as conversas.",
+        "en": "The assistant was offline from {start} to {end}. Messages from that period may be missing: check the conversations.",
+    },
+    "foreign_notice": {
+        "pt": "Chegou um evento de outro número que não é o deste atendimento. Ignorei. Se isso se repetir, confira a configuração.",
+        "en": "An event arrived from a number other than this service's. I ignored it. If it keeps happening, check the setup.",
+    },
     "greeting_default": {
         "pt": "Olá! Sou o atendente virtual de {business}. Como posso ajudar?",
         "en": "Hi! I am the virtual attendant of {business}. How can I help?",

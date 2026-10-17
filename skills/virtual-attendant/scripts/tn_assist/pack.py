@@ -289,8 +289,9 @@ def _console_pack(
 ) -> Pack:
     thread = thread_path(ws, item.kind, item.contact)
     lines = read_lines_at(thread)
-    new = [ln for ln in lines if ln.event_id in set(item.event_ids)]
-    recent = [ln for ln in lines if ln.event_id not in set(item.event_ids)][-policy.window_turns :]
+    mine = set(item.event_ids)
+    new = [ln for ln in lines if ln.event_id in mine and ln.event_id not in item.handled_ids]
+    recent = [ln for ln in lines if ln.event_id not in mine][-policy.window_turns :]
     index = _read_knowledge(ws, "INDEX.md")
     extra = ""
     if about is not None:

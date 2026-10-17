@@ -30,6 +30,7 @@ class WorkItem:
     event_ids: tuple[str, ...]
     created_at: str
     hydrated_ids: tuple[str, ...] = ()
+    handled_ids: tuple[str, ...] = ()
 
     @classmethod
     def new(
@@ -62,6 +63,7 @@ class WorkItem:
             "event_ids": list(self.event_ids),
             "created_at": self.created_at,
             "hydrated_ids": list(self.hydrated_ids),
+            "handled_ids": list(self.handled_ids),
         }
 
     @classmethod
@@ -73,6 +75,7 @@ class WorkItem:
             event_ids=tuple(data["event_ids"]),
             created_at=data["created_at"],
             hydrated_ids=tuple(data.get("hydrated_ids") or ()),
+            handled_ids=tuple(data.get("handled_ids") or ()),
         )
 
 
@@ -157,6 +160,19 @@ def mark_hydrated(ws: Workspace, item_id: str, event_id: str) -> None:
     item = WorkItem.from_json(data["item"])
     if event_id not in item.hydrated_ids:
         item = replace(item, hydrated_ids=item.hydrated_ids + (event_id,))
+    data["item"] = item.to_json()
+    write_json_atomic(path, data)
+
+
+def mark_handled(ws: Workspace, item_id: str, event_id: str) -> None:
+    """A console line that a command already carried out; it is never run again."""
+    path = _leased_dir(ws) / f"{item_id}.json"
+    data = read_json(path, None)
+    if not isinstance(data, dict):
+        return
+    item = WorkItem.from_json(data["item"])
+    if event_id not in item.handled_ids:
+        item = replace(item, handled_ids=item.handled_ids + (event_id,))
     data["item"] = item.to_json()
     write_json_atomic(path, data)
 
