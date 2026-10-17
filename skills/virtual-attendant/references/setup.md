@@ -32,6 +32,8 @@ export TN_ASSIST_ORG=org_…
 export TN_ASSIST_NUMBER=num_…
 ```
 
+If the variables do not persist between commands (each shell call may start fresh), pass them as global flags before the subcommand instead: `tn_assist --base <folder> --org org_… --number num_… status`.
+
 and run `tn_assist init --connected <digits> --business "<name>" --lang <pt|en> --harness <claude-code|claude-desktop|codex|antigravity> --admin <digits> --admin-name "<name>"`.
 
 - **If the administrator number is the connected number**, `init` answers with exit code 2 and a `warning`. Read that warning to the person in their language, in your own words but with every idea in it, and ask whether to register it anyway. Only if they say yes, run the same command again with `--confirm-connected`. Their answer is final. If they say no, ask for another number.
@@ -54,7 +56,7 @@ If the harness has other MCP servers installed (a catalog, a CRM, an agenda), fo
 
 ## 7. Privacy and mode
 
-Give the person the privacy notice from [privacy.md](privacy.md). Confirm that the mode is **assisted** (`tn_assist status` shows it) and explain that the assistant prepares answers and a person approves them with `/enviar` (or `/send`) until they switch to automatic with `/modo automático` (or `/mode auto`). Recommend at least the first week in assisted mode.
+Give the person the privacy notice from [privacy.md](privacy.md). Confirm that the mode is **assisted** (`tn_assist status` shows it) and explain that the assistant prepares answers and a person approves them with `/enviar` (or `/send`) until they switch to automatic (only Claude Code and Codex with the runner: in Claude Desktop, Cowork and Antigravity the command is refused and the mode stays assisted) with `/modo automático` (or `/mode auto`). Recommend at least the first week in assisted mode.
 
 ## 8. First run
 

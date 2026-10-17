@@ -271,8 +271,11 @@ def test_kb_write_and_sources_for_the_configurator(tmp_path: Path) -> None:
         str(src),
     )
     assert code == 0 and out["path"] == "pricing.md"
-    index = (tmp_path / f.ORG / f.NUM / "knowledge" / "INDEX.md").read_text()
+    knowledge = tmp_path / f.ORG / f.NUM / "knowledge"
+    index = (knowledge / "INDEX.md").read_text()
     assert "- pricing.md: planos e precos" in index
+    for private_file in (knowledge / "INDEX.md", knowledge / "pricing.md"):
+        assert private_file.stat().st_mode & 0o077 == 0  # D9: files are mode 0600
     run(
         tmp_path,
         "kb-write",

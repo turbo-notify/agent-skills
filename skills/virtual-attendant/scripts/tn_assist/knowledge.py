@@ -58,12 +58,14 @@ def write_knowledge(
         raise InvalidKnowledgePath(name) from error
     target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     target.write_text(text, encoding="utf-8")
+    target.chmod(0o600)
     index = _index(ws)
     lines = index.read_text(encoding="utf-8").splitlines() if index.exists() else []
     lines = [ln for ln in lines if not ln.startswith(f"- {relative}:")]
     lines.append(f"- {relative}: {' '.join(description.split())[:120]}")
     index.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     index.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    index.chmod(0o600)
     return relative
 
 
