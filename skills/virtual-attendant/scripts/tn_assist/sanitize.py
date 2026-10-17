@@ -33,3 +33,8 @@ def clean_fact_value(text: str, limit: int = 300) -> str:
     text = _PROVENANCE.sub("", text)
     text = neutralize_tags(text)
     return " ".join(text.split())[:limit]
+
+
+def clean_summary(text: str, limit: int = 2000) -> str:
+    """A model-written summary of what a customer said: one plain line, same rules as a fact."""
+    return clean_fact_value(text, limit)

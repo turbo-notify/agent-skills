@@ -22,7 +22,7 @@ from tn_assist.i18n import t
 from tn_assist.memory import Card, Fact, Policy, read_lines, write_episode
 from tn_assist.paths import ContactKey, Workspace
 from tn_assist.queue import WorkItem
-from tn_assist.sanitize import clean_fact_value, neutralize_tags
+from tn_assist.sanitize import clean_fact_value, clean_summary
 from tn_assist.state import ContactState, load_state, save_state
 from tn_assist.store import read_json, write_json_atomic
 from tn_assist.timeutil import parse_iso, utc_iso
@@ -198,9 +198,9 @@ def parse_compaction(raw: str) -> Compaction:
         if not isinstance(key, str) or not _FACT_KEY.match(key) or not isinstance(value, str):
             raise InvalidDecision("bad fact")
         facts.append(DecisionFact(key, clean_fact_value(value)))
-    cleaned = "\n\n".join(
-        " ".join(neutralize_tags(part).split()) for part in summary.split("\n\n") if part.strip()
-    )
+    cleaned = clean_summary(summary)
+    if not cleaned:
+        raise InvalidDecision("empty summary")
     return Compaction(cleaned, tuple(facts))
 
 
