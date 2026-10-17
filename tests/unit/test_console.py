@@ -27,7 +27,7 @@ from tn_assist.ingest import ingest
 from tn_assist.memory import Card, Fact
 from tn_assist.paths import ContactKey, Workspace
 from tn_assist.queue import WorkItem, enqueue
-from tn_assist.state import ContactState, load_state
+from tn_assist.state import ContactState, load_state, save_state
 from tn_assist.timeutil import utc_iso
 
 NOW = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
@@ -560,3 +560,28 @@ def test_forget_also_clears_the_copy_a_migration_left_behind(tmp_path: Path) -> 
     code = run(ws, f"/esquecer {f.ANA}").text.split("/confirmar")[1].split()[0]
     run(ws, f"/confirmar {code}")
     assert not saved.exists()
+
+
+def test_a_code_to_lift_an_opt_out_is_bound_to_that_customer(tmp_path: Path) -> None:  # review
+    ws = setup(tmp_path)
+    escalate(ws)
+    save_state(ws, ANA, replace(load_state(ws, ANA), state=ContactState.DO_NOT_CONTACT))
+    ask = run(ws, f"/retomar {f.ANA}")
+    assert f.ANA in ask.text and "/confirmar" in ask.text
+    code = ask.text.split("/confirmar")[1].split()[0]
+    pending = json.loads(ws.path("pending-confirmations.json").read_text())
+    assert next(iter(pending.values()))["raw"] == f"/retomar {f.ANA}"  # a number, not a position
+    run(ws, f"/confirmar {code}")
+    assert load_state(ws, ANA).state is ContactState.ACTIVE
+
+
+def test_a_new_note_never_reuses_the_number_of_a_trimmed_one(tmp_path: Path) -> None:  # review
+    ws = setup(tmp_path)
+    card = Card.load(ws, ANA)
+    card.merge([Fact("note_003", "tres", "admin", utc_iso(NOW))])
+    card.save()
+    run(ws, f"/nota {f.ANA} quatro")
+    assert {fact.key for fact in Card.load(ws, ANA).facts() if fact.key.startswith("note_")} == {
+        "note_003",
+        "note_004",
+    }

@@ -307,7 +307,12 @@ def _resume(
     if opted_out and role != "admin":
         return CommandResult(t("dnc_admin_only", lang, name=_name(ws, key)))
     if opted_out and not confirmed:
-        return CommandResult(t("confirm_ask", lang, code=issue_confirmation(ws, actor, cmd, now)))
+        # the code is for THIS customer: a queue position could point at someone else by then
+        bound = parse_command(f"/retomar {key}") or cmd
+        code = issue_confirmation(ws, actor, bound, now)
+        return CommandResult(
+            t("confirm_resume", lang, name=_name(ws, key), number=str(key), code=code)
+        )
     try:
         resume_contact(ws, key, by=actor, now=now, override_opt_out=opted_out and confirmed)
     except OptedOut:
@@ -428,7 +433,8 @@ def _note(ws: Workspace, cmd: Command, role: Role, now: datetime) -> CommandResu
         return CommandResult(t("not_found", lang))
     key = found[0]
     card = Card.load(ws, key)
-    number = 1 + sum(1 for fact in card.facts() if fact.key.startswith("note_"))
+    taken = [int(fact.key[5:]) for fact in card.facts() if re.fullmatch(r"note_\d+", fact.key)]
+    number = 1 + max(taken, default=0)  # never reuse a number a trimmed note once had
     card.merge([Fact(f"note_{number:03d}", clean_fact_value(cmd.rest), role, utc_iso(now))])
     card.save()
     return CommandResult(t("note_saved", lang, name=_name(ws, key)))
@@ -697,31 +703,39 @@ def _pause(ws: Workspace, cmd: Command, now: datetime) -> CommandResult:
     return CommandResult(t("paused_one", lang, name=_name(ws, key)))
 
 
-def forget_contact(ws: Workspace, key: ContactKey, actor: str, now: datetime) -> None:
-    """Erase what the assistant kept about one customer, and leave a trace that it happened."""
-    directory = ws.contact_dir(key)
+def _erase_from(root: Path, key: ContactKey) -> None:
+    """Remove one customer from a workspace tree (the live one, or a copy a migration made)."""
+    directory = root / "contacts" / str(key)
     if directory.exists():
         shutil.rmtree(directory)
-    escalation = ws.path("escalations", f"{key}.json")
+    escalation = root / "escalations" / f"{key}.json"
     if escalation.exists():
         escalation.unlink()
-    drafts = read_json(ws.path("drafts.json"), {})
+    drafts_path = root / "drafts.json"
+    drafts = read_json(drafts_path, {})
     if isinstance(drafts, dict) and drafts.get("drafts"):
         drafts["drafts"] = [d for d in drafts["drafts"] if d.get("contact") != str(key)]
-        write_json_atomic(ws.path("drafts.json"), drafts)
-    for folder in ("pending", "leased"):
-        for path in (
-            ws.path("queue", folder).glob("*.json") if ws.path("queue", folder).is_dir() else []
-        ):
+        write_json_atomic(drafts_path, drafts)
+    for folder in (root / "queue" / "pending", root / "queue" / "leased"):
+        for path in folder.glob("*.json") if folder.is_dir() else []:
             payload = read_json(path, {})
             item = payload.get("item", payload) if isinstance(payload, dict) else {}
             if item.get("contact") == str(key):
                 path.unlink()
-    drop_outbox_for(ws, str(key))
-    for backup in (
-        (ws.root / "backup").glob(f"*/contacts/{key}") if (ws.root / "backup").is_dir() else []
-    ):
-        shutil.rmtree(backup)  # a copy made before a migration keeps the customer too
+    outbox = root / "outbox"
+    for path in outbox.glob("*.json") if outbox.is_dir() else []:
+        op = read_json(path, {})
+        if isinstance(op, dict) and str(key) in (op.get("contact"), op.get("to")):
+            path.unlink()
+
+
+def forget_contact(ws: Workspace, key: ContactKey, actor: str, now: datetime) -> None:
+    """Erase what the assistant kept about one customer, and leave a trace that it happened."""
+    _erase_from(ws.root, key)
+    backups = ws.root / "backup"
+    for snapshot in backups.iterdir() if backups.is_dir() else []:
+        if snapshot.is_dir():
+            _erase_from(snapshot, key)  # a copy made before a migration keeps the customer too
     append_jsonl(
         ws.path("audit.log"),
         {"at": utc_iso(now), "action": "forget", "number": str(key), "by": actor},

@@ -178,6 +178,10 @@ CONSOLE_STRINGS: dict[str, dict[str, str]] = {
         "pt": "Isso não pode ser desfeito. Para confirmar, envie /confirmar {code} em até 10 minutos.",
         "en": "This cannot be undone. To confirm, send /confirm {code} within 10 minutes.",
     },
+    "confirm_resume": {
+        "pt": "{name} ({number}) pediu para não receber mensagens. Para devolver o cliente ao atendimento, envie /confirmar {code} em até 10 minutos.",
+        "en": "{name} ({number}) asked to stop receiving messages. To put the customer back in service, send /confirm {code} within 10 minutes.",
+    },
     "confirm_invalid": {
         "pt": "Esse código não vale. Envie o comando de novo para receber outro.",
         "en": "That code is not valid. Send the command again to get a new one.",

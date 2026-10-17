@@ -132,3 +132,13 @@ def test_an_empty_lock_file_left_by_a_dead_holder_is_taken_over(tmp_path: Path) 
     path.write_text("")  # the holder died right after creating the file
     b = lock(path, Clock(1000.0), pid=2, alive={2})
     assert b.acquire(ttl_s=90) is True
+
+
+def test_a_torn_last_line_does_not_swallow_the_next_record(tmp_path: Path) -> None:  # review
+    from tn_assist.store import append_jsonl, read_jsonl
+
+    path = tmp_path / "log.jsonl"
+    path.write_text('{"id": "a"}\n{"id": "b", "at')  # a crash cut the second line
+    append_jsonl(path, {"id": "c"})
+    append_jsonl(path, {"id": "d"})
+    assert [r["id"] for r in read_jsonl(path)] == ["a", "c", "d"]  # nothing raised, nothing glued

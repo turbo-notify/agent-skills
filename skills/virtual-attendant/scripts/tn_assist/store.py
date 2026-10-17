@@ -46,8 +46,11 @@ def read_json(path: Path, default: Any) -> Any:
 def append_jsonl(path: Path, record: dict[str, Any]) -> None:
     ensure_private_dir(path.parent)
     line = json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n"
-    fd = os.open(str(path), os.O_WRONLY | os.O_APPEND | os.O_CREAT, _FILE_MODE)
+    fd = os.open(str(path), os.O_RDWR | os.O_APPEND | os.O_CREAT, _FILE_MODE)
     try:
+        size = os.fstat(fd).st_size
+        if size and os.pread(fd, 1, size - 1) != b"\n":
+            line = "\n" + line  # a crash left half a line: the new record starts on its own line
         os.write(fd, line.encode("utf-8"))
         os.fsync(fd)
     finally:
@@ -69,21 +72,20 @@ def append_jsonl_once(
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    """Read a JSON-lines file; a torn last line (crash mid-write) is ignored."""
+    """Read a JSON-lines file; a line torn by a crash is skipped, never fatal for the rest."""
     try:
         with open(path, encoding="utf-8") as handle:
             lines = handle.read().split("\n")
     except FileNotFoundError:
         return []
     records: list[dict[str, Any]] = []
-    for index, line in enumerate(lines):
+    for line in lines:
         if not line.strip():
             continue
         try:
             records.append(json.loads(line))
         except json.JSONDecodeError:
-            if index < len(lines) - 1 and any(rest.strip() for rest in lines[index + 1 :]):
-                raise
+            continue
     return records
 
 
