@@ -1,7 +1,8 @@
 """Is a newer version of the skill out? Asked on every tick, answered from a one-hour cache.
 
-This is the helper's only network call besides the runner's own: one GET of ``latest.json`` from the
-module's public repository. It never raises and never blocks service: a failed check is just silence.
+This is the helper's only network call besides the runner's own: one GET of ``latest.json`` from
+the module's public repository. It never raises and never blocks service: a failed check is just
+silence.
 """
 
 from __future__ import annotations
