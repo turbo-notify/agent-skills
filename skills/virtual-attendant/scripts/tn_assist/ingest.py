@@ -135,15 +135,19 @@ def _recipient_key(event: Event) -> ContactKey | None:
 
 
 def _remember_name(ws: Workspace, key: ContactKey, event: Event, at: str) -> None:
-    """The name WhatsApp shows for the customer, kept as an inferred fact (people can override)."""
+    """The name WhatsApp shows for the customer, kept as a platform fact (people can override)."""
     sender = event.data.get("from")
     name = sender.get("name") if isinstance(sender, dict) else None
     if not isinstance(name, str) or not name.strip():
         return
     card = Card.load(ws, key)
     current = card.get("name")
-    if current is None or (current.source == "inferred" and current.value != name.strip()):
-        card.merge([Fact("name", name, "inferred", at)])
+    if (
+        current is None
+        or current.source == "inferred"
+        or (current.source == "platform" and current.value != name.strip())
+    ):
+        card.merge([Fact("name", name, "platform", at)])
         card.save()
 
 

@@ -248,3 +248,17 @@ def test_a_list_of_national_format_numbers_is_blocked(tmp_path: Path) -> None:  
     assert "other_contact" in verdict(ws, text).reasons
     assert "other_contact" in verdict(ws, "Fale com 11 6666-5555 ou 31 97777-0003").reasons  # no 9
     assert verdict(ws, "Pedido 123456, total R$ 490, entrega em 5 dias uteis.").ok
+
+
+def test_a_one_word_whatsapp_name_is_still_protected_but_a_model_fact_cannot_replace_it(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = setup(tmp_path)
+    other = ContactKey.parse("5511933334444")
+    card = Card.load(ws, other)
+    card.merge([Fact("name", "Marcelo", "platform", "2026-10-17T10:00:00Z")])  # the push name
+    card.merge([Fact("name", "Obrigado", "inferred", "2026-10-17T10:05:00Z")])  # a forged inference
+    card.save()
+    assert Card.load(ws, other).get("name").value == "Marcelo"  # type: ignore[union-attr]
+    assert not verdict(ws, "O Marcelo também perguntou isso.").ok
+    assert verdict(ws, "Obrigado pelo contato! O plano anual custa R$ 490.").ok

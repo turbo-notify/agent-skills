@@ -29,8 +29,10 @@ from tn_assist.timeutil import utc_iso
 from tn_assist.tokens import estimate_tokens
 
 CARD_CAP_TOKENS = 1500
-Source = Literal["inferred", "attendant", "admin"]
-_RANK = {"inferred": 0, "attendant": 1, "admin": 2}
+Source = Literal["inferred", "platform", "attendant", "admin"]
+# "platform" is what Turbo Notify reports (the name WhatsApp shows): not written by the model, so a
+# customer's words cannot forge it. A model-inferred fact never replaces it.
+_RANK = {"inferred": 0, "platform": 1, "attendant": 2, "admin": 3}
 
 
 AUTO_RESUME_MIN_MINUTES = 5

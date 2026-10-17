@@ -177,7 +177,7 @@ def test_ledger_is_compacted_when_it_grows_too_large(tmp_path: Path, monkeypatch
     assert len(ids) == 5 and ids[0] == "evt_old_8"
 
 
-def test_the_whatsapp_name_is_kept_as_an_inferred_fact_and_people_can_override_it(
+def test_the_whatsapp_name_is_kept_as_a_platform_fact_and_people_can_override_it(
     tmp_path: Path,
 ) -> None:
     from tn_assist.memory import Card, Fact
@@ -185,7 +185,7 @@ def test_the_whatsapp_name_is_kept_as_an_inferred_fact_and_people_can_override_i
     ws = make_workspace(tmp_path)
     run(ws, f.inbound_text(sender_name="Ana S."))
     card = Card.load(ws, ContactKey.parse(f.ANA))
-    assert card.get("name").value == "Ana S." and card.get("name").source == "inferred"  # type: ignore[union-attr]
+    assert card.get("name").value == "Ana S." and card.get("name").source == "platform"  # type: ignore[union-attr]
     card.merge([Fact("name", "Ana Souza", "admin", "2026-10-17T10:00:00Z")])
     card.save()
     run(ws, f.inbound_text(sender_name="Aninha"))

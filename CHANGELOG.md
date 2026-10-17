@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- Fix: the name WhatsApp shows for a customer is kept as a `platform` fact, so a one-word name of another customer is still kept out of replies and a fact the model infers from a customer's words can neither replace it nor forge a name.
+
 ## 0.2.1
 
 - Fix: a conversation that an administrator paused after a person had taken it over was handed back by the automatic resume; only a takeover is handed back now.
