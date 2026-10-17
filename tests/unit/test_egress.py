@@ -231,3 +231,12 @@ def test_what_the_team_wrote_about_a_customer_does_not_come_back_as_a_quote(
     card.save()
     assert "non_public" in verdict(ws, "Sei que voce sempre pede desconto no ultimo dia.").reasons
     assert verdict(ws, "O plano anual custa R$ 490 e a entrega leva até 5 dias úteis.").ok
+
+
+def test_a_short_team_note_is_still_caught_whole(tmp_path: Path) -> None:  # security review
+    ws = setup(tmp_path)
+    card = Card.load(ws, ANA)
+    card.merge([Fact("note_002", "ja pagou o sinal", "attendant", "2026-10-17T10:04:00Z")])
+    card.save()
+    assert "non_public" in verdict(ws, "Vi aqui que voce ja pagou o sinal, certo?").reasons
+    assert verdict(ws, "O plano anual custa R$ 490.").ok

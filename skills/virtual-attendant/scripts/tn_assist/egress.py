@@ -39,6 +39,12 @@ class EgressVerdict:
 
 
 NOTE_PREFIX = "note_"
+MIN_NOTE_WORDS = 3  # a one or two word note ("pago") says too little to be a quote
+
+
+def _contains(words: list[str], sequence: list[str]) -> bool:
+    size = len(sequence)
+    return any(words[i : i + size] == sequence for i in range(len(words) - size + 1))
 
 
 def _normalize(text: str) -> str:
@@ -169,10 +175,9 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
     text = _normalize(text)
     public_text, internal_text = _knowledge_texts(ws)
     # What the team wrote about this customer is for the team: it must not come back as a quote.
-    notes = " ".join(
-        f.value for f in Card.load(ws, contact).facts() if f.key.startswith(NOTE_PREFIX)
-    )
-    internal_text = f"{internal_text}\n{notes}" if notes else internal_text
+    notes = [f.value for f in Card.load(ws, contact).facts() if f.key.startswith(NOTE_PREFIX)]
+    if notes:
+        internal_text = f"{internal_text}\n{' '.join(notes)}"
     own_text = _normalize(_own_text(ws, contact))
     public_text = _normalize(public_text)
     allowed_digits = {_canonical(d) for d in _digit_runs(public_text + " " + own_text)}
@@ -220,6 +225,18 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
     if internal_text:
         hidden = _shingles(internal_text) - _shingles(public_text) - _shingles(own_text)
         if hidden & _shingles(text):
+            reasons.add("non_public")
+
+    # A note is checked whole, so a short one (shorter than a shingle) cannot slip through.
+    outgoing = _words(text)
+    allowed_words = _words(public_text) + _words(own_text)
+    for note in notes:
+        sequence = _words(note)
+        if (
+            len(sequence) >= MIN_NOTE_WORDS
+            and _contains(outgoing, sequence)
+            and not _contains(allowed_words, sequence)
+        ):
             reasons.add("non_public")
 
     if _CREDENTIAL.search(text):

@@ -496,6 +496,9 @@ def cmd_run(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
         model=args.model,
     )
     api = RestApi(cfg.api_base, key, ws.num_id)
+    cmd_migrate(
+        ws, args
+    )  # a new version may need a newer folder layout; refuses a folder from a newer one
     with contextlib.suppress(KeyboardInterrupt):
         run_forever(cfg, api, once=args.once)
     return {"stopped": True}
