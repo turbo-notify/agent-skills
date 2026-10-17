@@ -16,10 +16,12 @@ from datetime import datetime, timedelta
 from typing import Any, Literal, Union
 
 from tn_assist.config import load_config
+from tn_assist.egress import check_egress
 from tn_assist.i18n import t
 from tn_assist.memory import Card, Fact, Policy, read_lines
 from tn_assist.paths import ContactKey, Workspace
 from tn_assist.queue import WorkItem
+from tn_assist.sanitize import clean_fact_value
 from tn_assist.state import ContactState, load_state, save_state
 from tn_assist.store import read_json, write_json_atomic
 from tn_assist.timeutil import parse_iso, utc_iso
@@ -140,7 +142,7 @@ def parse_decision(role: Role, raw: str) -> Decision:
         key, value = entry["key"], entry["value"]
         if not isinstance(key, str) or not _FACT_KEY.match(key) or not isinstance(value, str):
             raise InvalidDecision("bad fact")
-        facts.append(DecisionFact(key, value[:300]))
+        facts.append(DecisionFact(key, clean_fact_value(value)))
     escalation = None
     if data.get("escalate") is not None:
         raw_esc = data["escalate"]
@@ -366,17 +368,51 @@ class _Context:
     mode: Mode
     guard: Guard | None
     out: list[Action] = field(default_factory=list)
+    blocked: bool = False
 
-    def say(self, text: str) -> None:
+    def _target(self) -> tuple[str, str]:
         event_id = self.item.event_ids[-1]
         lines = [ln for ln in read_lines(self.ws, self.key) if ln.event_id == event_id]
-        message_id = (lines[0].message_id if lines else None) or ""
+        return event_id, (lines[0].message_id if lines else None) or ""
+
+    def _emit(self, text: str) -> None:
+        event_id, message_id = self._target()
         action: Action
         if self.mode == "assist":
             action = _add_draft(self.ws, str(self.key), text, event_id, message_id, self.now)
         else:
             action = Reply(str(self.key), message_id, text, event_id)
         self.out.append(self.guard(action) if self.guard else action)
+
+    def say(self, text: str) -> None:
+        """Queue a message to the customer, after the egress guard. Nothing skips this check."""
+        verdict = check_egress(self.ws, text, contact=self.key)
+        if verdict.ok:
+            self._emit(text)
+            return
+        self.blocked = True
+        lang = _lang(self.ws)
+        why = ", ".join(t(f"egress_{r}", lang) for r in verdict.reasons)
+        _count(self.ws, "egress_blocked")
+        if self.mode == "assist":
+            self._emit(t("blocked_draft", lang, why=why))
+        else:
+            self._emit(t("handoff_default", lang))
+        reason = t("reason_reply_blocked", lang, why=why)
+        self.out += _open_escalation(
+            self.ws,
+            self.key,
+            Escalation(reason, "", "normal"),
+            self.now,
+            load_state(self.ws, self.key),
+        )
+
+
+def _count(ws: Workspace, name: str) -> None:
+    stats = read_json(ws.path("stats.json"), {})
+    stats = stats if isinstance(stats, dict) else {}
+    stats[name] = int(stats.get(name, 0)) + 1
+    write_json_atomic(ws.path("stats.json"), stats)
 
 
 def _count_reply(ws: Workspace, key: ContactKey, now: datetime) -> None:
@@ -436,11 +472,12 @@ def apply_contact_decision(
 
     if escalation is not None:
         ctx.say(decision.reply or t("handoff_default", lang))
-        ctx.out += _open_escalation(ws, key, escalation, now, load_state(ws, key))
+        if not ctx.blocked:
+            ctx.out += _open_escalation(ws, key, escalation, now, load_state(ws, key))
         return ctx.out
 
     if decision.reply:
         ctx.say(decision.reply)
-        if mode == "auto":
+        if mode == "auto" and not ctx.blocked:
             _count_reply(ws, key, now)
     return ctx.out

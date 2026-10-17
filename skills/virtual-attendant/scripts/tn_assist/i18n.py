@@ -93,6 +93,15 @@ STRINGS: dict[str, dict[str, str]] = {
         "pt": "passou do limite de respostas por período",
         "en": "too many replies in a short period",
     },
+    "reason_reply_blocked": {
+        "pt": "uma resposta foi bloqueada para proteger {why}",
+        "en": "a reply was blocked to protect {why}",
+    },
+    "egress_other_contact": {"pt": "dados de outro cliente", "en": "another customer's data"},
+    "egress_non_public": {"pt": "informação interna", "en": "internal information"},
+    "egress_personal_data": {"pt": "dados pessoais", "en": "personal data"},
+    "egress_credential": {"pt": "uma credencial", "en": "a credential"},
+    "blocked_draft": {"pt": "[bloqueado: {why}]", "en": "[blocked: {why}]"},
     "reason_empty_decision": {
         "pt": "o assistente não soube como responder",
         "en": "the assistant did not know how to answer",

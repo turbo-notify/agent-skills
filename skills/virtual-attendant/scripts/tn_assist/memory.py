@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from tn_assist.paths import ContactKey, Workspace
+from tn_assist.sanitize import clean_fact_value
 from tn_assist.store import (
     append_jsonl_once,
     read_json,
@@ -219,6 +220,10 @@ class Fact:
     at: str
 
 
+def replace_value(fact: Fact) -> Fact:
+    return dataclasses.replace(fact, value=clean_fact_value(fact.value))
+
+
 class Card:
     def __init__(self, ws: Workspace, key: ContactKey, facts: dict[str, Fact]) -> None:
         self._ws = ws
@@ -243,6 +248,7 @@ class Card:
 
     def merge(self, incoming: list[Fact]) -> None:
         for fact in incoming:
+            fact = replace_value(fact)
             old = self._facts.get(fact.key)
             if (
                 old is None
@@ -261,7 +267,10 @@ class Card:
             del self._facts[victim.key]
 
     def render(self) -> str:
-        return "\n".join(f"- **{f.key}** ({f.source}): {f.value}" for f in self.facts())
+        # values are cleaned again here: a card edited by hand must not forge a line either
+        return "\n".join(
+            f"- **{f.key}** ({f.source}): {clean_fact_value(f.value)}" for f in self.facts()
+        )
 
     def save(self) -> None:
         payload = {"facts": [dataclasses.asdict(f) for f in self.facts()]}

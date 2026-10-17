@@ -27,6 +27,7 @@ from tn_assist.memory import (
 )
 from tn_assist.paths import ContactKey, Workspace
 from tn_assist.queue import WorkItem
+from tn_assist.sanitize import neutralize_tags, one_line
 from tn_assist.threads import thread_path
 from tn_assist.tokens import estimate_tokens
 
@@ -138,16 +139,8 @@ def _business(ws: Workspace) -> str:
     return str(load_config(ws).get("business_name") or "this business")
 
 
-_TAG = re.compile(r"(customer|person)[_ -]?message", re.IGNORECASE)
-
-
-def _one_line(text: str) -> str:
-    """History lines are one line each, so a message cannot forge a line of someone else."""
-    return " \u23ce ".join(part.strip() for part in text.splitlines() if part.strip())
-
-
-def _neutralize(text: str) -> str:
-    return _TAG.sub(lambda m: f"{m.group(1)} message", text)
+_neutralize = neutralize_tags
+_one_line = one_line
 
 
 def _render_line(line: Line) -> str:
