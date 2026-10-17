@@ -7,7 +7,7 @@ The skill checks its own version on every cycle (`tn_assist version-check --anno
 | Harness | Update |
 |---|---|
 | Claude Code | `claude plugin marketplace update turbo-notify`, then `claude plugin update turbo-notify@turbo-notify`, then restart. With auto-update on for the marketplace (`/plugin`, Marketplaces tab, Enable auto-update), it happens by itself when Claude Code starts. |
-| Claude Desktop or Cowork | In Plugins, open the `turbo-notify` marketplace and use Check for updates, or turn on Sync automatically. A plugin uploaded by hand as a file does not update; install it from the marketplace instead. |
+| Claude Desktop or Cowork | The marketplace syncs from the repository; Claude's documentation describes no manual update button, so if the new version does not show up, remove the `turbo-notify` marketplace on the Plugins page and add it again. A plugin uploaded by hand as a file does not update; install it from the marketplace instead. |
 | Codex | `codex plugin marketplace upgrade`, then `codex plugin add turbo-notify@turbo-notify`. |
 | Antigravity | `agy plugin install https://github.com/turbo-notify/agent-skills` again, over the installed one. |
 

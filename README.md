@@ -17,7 +17,7 @@ and [Agent skills](https://docs.turbonotify.com/en/general/skills/).
 | Agent | Commands |
 |---|---|
 | Claude Code | `claude plugin marketplace add turbo-notify/agent-skills#v1` then `claude plugin install turbo-notify@turbo-notify` |
-| Claude Desktop and Cowork | In Plugins, add the marketplace `turbo-notify/agent-skills` and install the plugin `turbo-notify` |
+| Claude Desktop and Cowork | Customize, Plugins, Add, Add marketplace, Add from a repository: `turbo-notify/agent-skills`; then Discover, `turbo-notify`, Add |
 | Codex | `codex plugin marketplace add turbo-notify/agent-skills --ref v1` then `codex plugin add turbo-notify@turbo-notify` |
 | Antigravity | `agy plugin install https://github.com/turbo-notify/agent-skills` |
 
@@ -33,7 +33,7 @@ with the command for the agent in use.
 | Agent | Command |
 |---|---|
 | Claude Code | `claude plugin marketplace update turbo-notify` then `claude plugin update turbo-notify@turbo-notify` |
-| Claude Desktop and Cowork | Plugins, marketplace `turbo-notify`, Check for updates |
+| Claude Desktop and Cowork | The marketplace syncs from the repository; if a new version does not show up, remove the marketplace and add it again |
 | Codex | `codex plugin marketplace upgrade` then `codex plugin add turbo-notify@turbo-notify` |
 | Antigravity | Run the install command again |
 

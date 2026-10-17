@@ -49,8 +49,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "claude plugin marketplace update turbo-notify && claude plugin update turbo-notify@turbo-notify (then restart Claude Code)",
     },
     "update_hint_claude_desktop": {
-        "pt": "no Claude Desktop ou no Cowork, abra o marketplace turbo-notify em Plugins e use Check for updates, ou ligue Sync automatically",
-        "en": "in Claude Desktop or Cowork, open the turbo-notify marketplace under Plugins and use Check for updates, or turn on Sync automatically",
+        "pt": "no Claude Desktop ou no Cowork, o marketplace sincroniza pelo repositório; se a versão nova não aparecer, remova o marketplace turbo-notify em Plugins e adicione de novo",
+        "en": "in Claude Desktop or Cowork, the marketplace syncs from the repository; if the new version does not show up, remove the turbo-notify marketplace under Plugins and add it again",
     },
     "update_hint_codex": {
         "pt": "codex plugin marketplace upgrade && codex plugin add turbo-notify@turbo-notify",

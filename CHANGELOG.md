@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.4
+
+- Docs and update notice: the Claude Desktop and Cowork steps now use the real menu names (Customize, Plugins, Add, Add marketplace, Add from a repository, then Discover and Add) and no longer mention an update button that Claude does not document.
+
 ## 0.2.3
 
 - Fix: a WhatsApp display name that is a word every reply uses (a greeting, a thank you, a plan or a weekday) no longer blocks other customers' replies, and the marker that strips a forged `(platform)` provenance from a fact is covered like the others.

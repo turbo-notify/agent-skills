@@ -7,7 +7,7 @@ Claude Desktop and Cowork run the attendant **in session, in assisted mode**. Th
 Add the marketplace `turbo-notify/agent-skills` as a plugin source and install the plugin `turbo-notify`:
 
 - In a Team or Enterprise plan, an Owner adds the repository in the organization settings (Plugins and skills) and turns on automatic sync, so everyone stays current.
-- On your own account, in Plugins, add the marketplace by its address and use **Check for updates** from time to time.
+- On your own account, open Customize, Plugins, Add, Add marketplace, Add from a repository and enter `turbo-notify/agent-skills`. The documentation of Claude describes no manual update button: if a new version does not show up, remove the marketplace from the Plugins page and add it again.
 - A plugin uploaded by hand as a file never updates. Install it from the marketplace instead.
 
 Each cycle also checks the version and tells the administrators when a new one exists.
