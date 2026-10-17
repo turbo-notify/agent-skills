@@ -17,7 +17,7 @@ hypothesis = "^6.115"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["skills/virtual-attendant/scripts"]
+pythonpath = [".", "skills/virtual-attendant/scripts"]
 addopts = "-q"
 
 [tool.ruff]

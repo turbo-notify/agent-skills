@@ -1,0 +1,1135 @@
+{
+ "message.received|native|inbound|1:1|audio": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "transcription": {
+    "hint": "str",
+    "kind": "str",
+    "reason": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|1:1|calendar": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|1:1|contact": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|1:1|document": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|1:1|image": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|1:1|location": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|1:1|sticker": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|1:1|text": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|1:1|video": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|group|audio": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   },
+   "transcription": {
+    "hint": "str",
+    "kind": "str",
+    "reason": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|group|calendar": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|group|contact": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|group|document": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|group|image": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|group|location": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|group|sticker": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|group|text": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.received|native|inbound|group|video": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.replied|native|inbound|1:1|text": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "quoted_message_id": "str",
+   "to": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.replied|native|inbound|group|sticker": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "quoted_message_id": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.replied|native|inbound|group|text": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "quoted_message_id": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.replied|tn|outbound|1:1|text": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "quoted_message_id": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.replied|tn|outbound|group|text": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "quoted_message_id": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|native|outbound|1:1|text": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|audio": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|calendar": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|contact": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|document": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|image": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|interactive": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|location": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|sticker": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|text": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|1:1|video": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|group|audio": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|group|calendar": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|group|contact": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|group|image": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|group|interactive": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|group|sticker": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ },
+ "message.sent|tn|outbound|group|text": {
+  "created_at": "str",
+  "data": {
+   "at": "str",
+   "channel": "str",
+   "content_type": "str",
+   "direction": "str",
+   "from": {
+    "alias": "str",
+    "contact_id": "str",
+    "name": "str",
+    "number": "str"
+   },
+   "id": "str",
+   "origin": "str",
+   "preview": "str",
+   "to": {
+    "group_id": "str",
+    "name": "str"
+   }
+  },
+  "id": "str",
+  "number_alias": "str",
+  "number_id": "str",
+  "organization_id": "str",
+  "type": "str"
+ }
+}
