@@ -41,7 +41,7 @@ with the command for the agent in use.
 
 - The Turbo Notify MCP server you connected, with your account or API key permissions.
 - One folder on your computer (by default `~/.turbo-notify/attendant`) holding conversations, customer files and what you taught. Turbo Notify gets no copy.
-- One network address besides Turbo Notify: `raw.githubusercontent.com/turbo-notify/agent-skills/main/latest.json`, read at most once an hour for the version check. A failure changes nothing.
+- One network address besides Turbo Notify: `raw.githubusercontent.com/turbo-notify/agent-skills/main/latest.json`, read at most once an hour (every 10 minutes after a failure) for the version check. A failure changes nothing.
 - Your other MCP servers only if you allow each one during setup.
 
 ## Layout

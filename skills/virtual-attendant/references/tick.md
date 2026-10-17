@@ -19,8 +19,7 @@ Repeat `tn_assist next` until `item` is null. For each item:
    - `admin` or `attendant`: run `tn_assist run-console --item <id>`. Commands are carried out by the helper without a model. If `needs_model` is true, there is free text: see [admin-console.md](admin-console.md).
    - `compaction`: [memory.md](memory.md).
 3. Carry out every delivery that `apply` or `run-console` returned, in order:
-   - `reply`: `reply_to_message` with `message_id`, `text`, `idempotency_key`, `number_alias` = the `num_…`.
-   - `send`: `send_text` with `number` = `+` and `to`, `text`, `idempotency_key`, `number_alias` = the `num_…`.
+   - `send`: `send_text` with `number` = `+` and `to`, `text`, `idempotency_key`, `number_alias` = the `num_…`, and `quoted_message_id` = `quote` when the delivery has one. Do not quote anything else: `reply_to_message` is not used, because it would quote the message that was just answered.
    Do not edit text, do not skip, do not add anyone.
 4. If a delivery is refused with a quota, plan or connection error (`payment_required`, `rate_limited`, `number_not_connected`), do not retry. Run `tn_assist report-failure --cause <the error code> --cycle <billing cycle, for example the month>` and deliver the notice it returns. It speaks once per cause and cycle.
 

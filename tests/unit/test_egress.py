@@ -197,3 +197,37 @@ def test_long_numbers_cannot_hide_inside_money_or_a_date(tmp_path: Path) -> None
     ):
         assert not verdict(ws, text).ok, text
     assert verdict(ws, "Total R$ 1.234,56 em 31/12/2026").ok
+
+
+def test_a_one_word_name_a_stranger_made_the_model_infer_cannot_block_other_replies(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = setup(tmp_path)
+    stranger = ContactKey.parse("5511933334444")
+    card = Card.load(ws, stranger)
+    card.merge([Fact("name", "Obrigado", "inferred", "2026-10-17T10:01:00Z")])
+    card.save()
+    assert verdict(ws, "Obrigado pelo contato! O plano anual custa R$ 490.").ok
+    card.merge([Fact("name", "Carlos Mendes", "inferred", "2026-10-17T10:02:00Z")])
+    card.save()
+    assert not verdict(ws, "Carlos Mendes também perguntou isso.").ok  # a full name still counts
+
+
+def test_what_the_team_wrote_about_a_customer_does_not_come_back_as_a_quote(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = setup(tmp_path)
+    card = Card.load(ws, ANA)
+    card.merge(
+        [
+            Fact(
+                "note_001",
+                "cliente dificil, sempre pede desconto no ultimo dia",
+                "attendant",
+                "2026-10-17T10:03:00Z",
+            )
+        ]
+    )
+    card.save()
+    assert "non_public" in verdict(ws, "Sei que voce sempre pede desconto no ultimo dia.").reasons
+    assert verdict(ws, "O plano anual custa R$ 490 e a entrega leva até 5 dias úteis.").ok

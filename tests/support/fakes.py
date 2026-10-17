@@ -10,6 +10,8 @@ from tn_assist.events import Event, parse_events
 from tn_assist.profiles import Child
 from tn_assist.runner import ApiError
 
+PEOPLE = {f.OWNER, f.CONNECTED}
+
 
 class FakeApi:
     def __init__(self) -> None:
@@ -17,6 +19,7 @@ class FakeApi:
         self.texts: dict[str, str | None] = {}
         self.replies: list[tuple[str, str, str, str]] = []
         self.sends: list[tuple[str, str, str, str]] = []
+        self.quotes: list[str | None] = []  # the earlier message each customer answer quoted
         self.errors: list[ApiError] = []
         self.reply_error: ApiError | None = None  # every reply fails with this, until cleared
         self.event_calls = 0
@@ -46,13 +49,15 @@ class FakeApi:
         if self.errors:
             raise self.errors.pop(0)
 
-    def reply(self, number_ref: str, message_id: str, text: str, key: str) -> None:
-        if self.reply_error is not None:
-            raise self.reply_error
-        self._maybe_fail()
-        self.replies.append((number_ref, message_id, text, key))
-
-    def send(self, number_ref: str, to: str, text: str, key: str) -> None:
+    def send(self, number_ref: str, to: str, text: str, key: str, quote: str | None = None) -> None:
+        """A message to one of the people (a notice) or to a customer (an answer)."""
+        if to not in PEOPLE:
+            if self.reply_error is not None:
+                raise self.reply_error
+            self._maybe_fail()
+            self.replies.append((number_ref, to, text, key))
+            self.quotes.append(quote)
+            return
         self._maybe_fail()
         self.sends.append((number_ref, to, text, key))
 

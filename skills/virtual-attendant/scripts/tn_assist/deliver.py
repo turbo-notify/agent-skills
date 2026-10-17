@@ -58,11 +58,12 @@ def expand(ws: Workspace, actions: list[Action], *, seed: str) -> list[dict[str,
         if isinstance(action, Reply):
             ops.append(
                 {
-                    "op": "reply",
-                    "message_id": action.to_message_id,
+                    "op": "send",
+                    "to": action.contact,
                     "text": action.text,
                     "idempotency_key": action.idempotency_key,
                     "contact": action.contact,
+                    "quote": action.quote_message_id,
                 }
             )
         elif isinstance(action, (NotifyAdmins, NotifySelfChat)):

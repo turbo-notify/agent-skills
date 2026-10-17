@@ -177,11 +177,12 @@ def test_auto_mode_replies_directly(tmp_path: Path) -> None:
     )
     assert applied["deliveries"] == [
         {
-            "op": "reply",
-            "message_id": event["data"]["id"],
+            "op": "send",
+            "to": f.ANA,
             "text": "Olá!",
             "idempotency_key": event["id"],
             "contact": f.ANA,
+            "quote": None,
         }
     ]
 
@@ -509,9 +510,9 @@ def test_a_customer_can_be_handed_to_a_person_without_a_model_answer(tmp_path: P
         NOW,
     )
     assert code == 0
-    kinds = {o["op"] for o in out["deliveries"]}
-    assert kinds == {"reply", "send"}
-    sends = [o for o in out["deliveries"] if o["op"] == "send"]
+    sends = [o for o in out["deliveries"] if o["to"] != f.ANA]
+    assert {o["op"] for o in out["deliveries"]} == {"send"}
+    assert any(o["to"] == f.ANA for o in out["deliveries"])  # the customer is told
     assert {o["to"] for o in sends} == {f.OWNER, f.CONNECTED}
     assert "decision unreadable" in sends[0]["text"]
     _, queue = run(tmp_path, "status", "--now", NOW)

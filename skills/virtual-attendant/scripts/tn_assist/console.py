@@ -28,6 +28,7 @@ from tn_assist.apply import (
     OptedOut,
     Reply,
     drop_drafts_for,
+    drop_outbox_for,
     list_drafts,
     open_escalations,
     pop_draft,
@@ -344,8 +345,6 @@ def _send(ws: Workspace, cmd: Command, role: Role, now: datetime) -> CommandResu
     replacement = cmd.rest.strip()
     if draft.get("blocked") and not replacement:
         return CommandResult(t("send_blocked", lang, n=str(number)))
-    if not draft.get("to_message_id"):
-        return CommandResult(t("send_unknown", lang, n=str(number)))
     pop_draft(ws, number)
     key = ContactKey.parse(draft["contact"])
     text = replacement or draft["text"]
@@ -360,7 +359,7 @@ def _send(ws: Workspace, cmd: Command, role: Role, now: datetime) -> CommandResu
         event_id=f"reply-{draft['event_id']}",
         at=utc_iso(now),
     )
-    reply = Reply(draft["contact"], draft["to_message_id"], text, draft["event_id"])
+    reply = Reply(draft["contact"], draft.get("quote_message_id"), text, draft["event_id"])
     return CommandResult(t("send_done", lang, name=_name(ws, key)), [reply])
 
 
@@ -717,6 +716,7 @@ def forget_contact(ws: Workspace, key: ContactKey, actor: str, now: datetime) ->
             item = payload.get("item", payload) if isinstance(payload, dict) else {}
             if item.get("contact") == str(key):
                 path.unlink()
+    drop_outbox_for(ws, str(key))
     append_jsonl(
         ws.path("audit.log"),
         {"at": utc_iso(now), "action": "forget", "number": str(key), "by": actor},

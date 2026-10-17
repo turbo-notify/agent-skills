@@ -21,6 +21,7 @@ from tn_assist.apply import (
 from tn_assist.commands import parse_command
 from tn_assist.config import load_config, save_config
 from tn_assist.console import capture_text, run_command
+from tn_assist.deliver import outbox_add, outbox_pending
 from tn_assist.events import parse_events
 from tn_assist.ingest import ingest
 from tn_assist.memory import Card, Fact
@@ -349,10 +350,23 @@ def test_forget_erases_the_contact_after_confirmation(tmp_path: Path) -> None:  
     card = Card.load(ws, ANA)
     card.merge([Fact("interest", "plano anual", "admin", utc_iso(NOW))])
     card.save()
+    outbox_add(
+        ws,
+        [
+            {
+                "op": "reply",
+                "message_id": "m1",
+                "text": "x",
+                "idempotency_key": "k1",
+                "contact": f.ANA,
+            }
+        ],
+    )
     first = run(ws, f"/esquecer {f.ANA}")
     assert (ws.root / "contacts" / f.ANA).exists() and "/confirmar" in first.text
     code = first.text.split("/confirmar")[1].split()[0]
     done = run(ws, f"/confirmar {code}")
+    assert outbox_pending(ws) == []  # a reply still waiting for delivery is erased too
     assert not (ws.root / "contacts" / f.ANA).exists()
     assert not (ws.root / "escalations" / f"{f.ANA}.json").exists()
     assert load_state(ws, ANA).state is ContactState.ACTIVE  # treated as new

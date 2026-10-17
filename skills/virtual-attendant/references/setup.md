@@ -58,7 +58,7 @@ Give the person the privacy notice from [privacy.md](privacy.md). Confirm that t
 
 ## 8. First run
 
-Ask the person to write "oi" to the number from another phone. Then run one cycle ([tick.md](tick.md)). In assisted mode a draft arrives in the chat of the number with itself and to the administrators. Show it and explain `/enviar`.
+Ask the person to write "oi" to the number from a phone that is **not** a registered administrator (a friend, a second SIM): an administrator is never treated as a customer, so their "oi" would be read as a command. Then run one cycle ([tick.md](tick.md)). In assisted mode a draft arrives in the chat of the number with itself and to the administrators. Show it and explain `/enviar`.
 
 Then choose how to keep it running, with the file for the harness: [Claude Code](harness-claude-code.md), [Claude Desktop or Cowork](harness-claude-desktop.md), [Codex](harness-codex.md), [Antigravity](harness-antigravity.md). Say plainly what that harness can and cannot do (for example, Claude Desktop cannot run while the app is closed).
 

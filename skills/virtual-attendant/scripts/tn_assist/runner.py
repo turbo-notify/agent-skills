@@ -103,8 +103,9 @@ def classify(error: ApiError) -> str:
 class Api(Protocol):
     def events(self, params: dict[str, str]) -> list[Event]: ...
     def message_text(self, number_ref: str, message_id: str) -> str | None: ...
-    def reply(self, number_ref: str, message_id: str, text: str, key: str) -> None: ...
-    def send(self, number_ref: str, to: str, text: str, key: str) -> None: ...
+    def send(
+        self, number_ref: str, to: str, text: str, key: str, quote: str | None = None
+    ) -> None: ...
 
 
 class RestApi:
@@ -177,21 +178,11 @@ class RestApi:
                 return str(transcription["text"])
         return ""
 
-    def reply(self, number_ref: str, message_id: str, text: str, key: str) -> None:
-        self._call(
-            "POST",
-            f"/v1/numbers/{number_ref}/messages/{message_id}/reply",
-            {"content": {"text": text}},
-            key,
-        )
-
-    def send(self, number_ref: str, to: str, text: str, key: str) -> None:
-        self._call(
-            "POST",
-            f"/v1/numbers/{number_ref}/messages",
-            {"to": {"number": "+" + to}, "content": {"text": text}},
-            key,
-        )
+    def send(self, number_ref: str, to: str, text: str, key: str, quote: str | None = None) -> None:
+        body: dict[str, Any] = {"to": {"number": "+" + to}, "content": {"text": text}}
+        if quote:
+            body["quoted_message_id"] = quote
+        self._call("POST", f"/v1/numbers/{number_ref}/messages", body, key)
 
 
 class ChildFailed(Exception):
@@ -263,10 +254,7 @@ Sleep = Callable[[float], None]
 
 
 def _attempt(api: Api, number_ref: str, op: dict[str, Any]) -> None:
-    if op["op"] == "reply":
-        api.reply(number_ref, op["message_id"], op["text"], op["idempotency_key"])
-    else:
-        api.send(number_ref, op["to"], op["text"], op["idempotency_key"])
+    api.send(number_ref, op["to"], op["text"], op["idempotency_key"], op.get("quote"))
 
 
 def _execute(

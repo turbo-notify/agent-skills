@@ -12,18 +12,21 @@ from tn_assist.deliver import expand
 NOW = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
 
 
-def test_reply_becomes_a_reply_operation(tmp_path: Path) -> None:
+def test_an_answer_is_a_plain_message_and_a_quote_only_when_one_is_given(tmp_path: Path) -> None:
     ws = make_workspace(tmp_path)
-    ops = expand(ws, [Reply(f.ANA, "msg_1", "Olá!", "evt_1")], seed="item-1")
-    assert ops == [
+    plain = expand(ws, [Reply(f.ANA, None, "Olá!", "evt_1")], seed="item-1")
+    assert plain == [
         {
-            "op": "reply",
-            "message_id": "msg_1",
+            "op": "send",
+            "to": f.ANA,
             "text": "Olá!",
             "idempotency_key": "evt_1",
             "contact": f.ANA,
+            "quote": None,
         }
     ]
+    quoted = expand(ws, [Reply(f.ANA, "msg_" + "b" * 32, "Sobre isso:", "evt_2")], seed="item-2")
+    assert quoted[0]["quote"] == "msg_" + "b" * 32
 
 
 def test_notices_go_to_every_admin_and_to_the_self_chat(tmp_path: Path) -> None:

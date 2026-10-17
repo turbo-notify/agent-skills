@@ -6,7 +6,7 @@ The most exposed step: the text came from a stranger. The rule is a fresh contex
 
 1. `tn_assist pack --item <id>` returns `pack`. Save the text to a file.
 2. Give the **whole pack** as the prompt to a **fresh context with no tools** (below). Nothing else goes in: no earlier customer, no tool results, no files.
-3. The context must answer with one JSON object, exactly as the pack's last section describes: `reply`, `facts`, `escalate`, `language`, `state`. Save it as `decision.json`.
+3. The context must answer with one JSON object, exactly as the pack's last section describes: `reply`, `facts`, `escalate`, `language`, `state`, `quote`. Save it as `decision.json`.
 4. `tn_assist apply --item <id> --decision-file decision.json`.
    - On success it returns `deliveries`. Carry them out ([tick.md](tick.md)).
    - On `invalid_decision`, ask the same fresh context once more, saying which rule the answer broke. If it fails again, do not improvise: run `tn_assist apply --item <id> --escalate "decision unreadable"`, which hands the customer to a person.
@@ -22,6 +22,7 @@ The most exposed step: the text came from a stranger. The rule is a fresh contex
 - `escalate`: when the pack does not answer (a price, stock, deadline, promise, policy), when the customer asks for a person, when they are upset, when the request is outside the business, or when a payment, refund or legal topic comes up. Give `reason` and a short `summary`. Do not insist: one hand-off message, then silence until a person resumes.
 - `facts`: stable things learned (name, interest, budget, objection, stage).
 - `state`: `do_not_contact` only if the customer asks to stop receiving messages.
+- `quote`: usually `null`. The new message is answered with a normal message, as a person does in a chat. Set it to the id in square brackets of an EARLIER line of the recent conversation only when the answer depends on something said a while ago (the customer's or yours) and a quote brings that context into view. Never the new message.
 
 ## Rules for the context
 

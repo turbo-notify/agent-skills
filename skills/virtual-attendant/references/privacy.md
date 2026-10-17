@@ -6,11 +6,11 @@ The business that runs the assistant decides what is done with its customers' da
 
 Portuguese:
 
-> O atendente virtual guarda neste computador as conversas com os seus clientes, a ficha de cada um e o que você ensinar sobre o negócio, na pasta que escolhemos juntos. Quem tem acesso a essa pasta vê tudo isso. As mensagens ficam guardadas por 90 dias, depois são apagadas. Você pode apagar os dados de um cliente quando ele pedir, com `/esquecer`, e exportar o que há sobre ele. A política de privacidade da sua empresa deve dizer que você usa um atendimento automatizado, e o assistente se apresenta como atendente virtual sempre que perguntam. O que o Turbo Notify guarda do seu lado segue o prazo do seu plano.
+> O atendente virtual guarda neste computador as conversas com os seus clientes, a ficha de cada um e o que você ensinar sobre o negócio, na pasta que escolhemos juntos. Quem tem acesso a essa pasta vê tudo isso. O texto das mensagens fica guardado por 90 dias e depois é apagado; o resumo das conversas e a ficha do cliente ficam até você usar `/esquecer`. Você pode apagar os dados de um cliente quando ele pedir, com `/esquecer`, e exportar o que há sobre ele. A política de privacidade da sua empresa deve dizer que você usa um atendimento automatizado, e o assistente se apresenta como atendente virtual sempre que perguntam. O que o Turbo Notify guarda do seu lado segue o prazo do seu plano.
 
 English:
 
-> The virtual attendant keeps your customers' conversations, each customer's file and what you teach it about the business on this computer, in the folder we chose together. Anyone with access to that folder sees all of it. Messages are kept for 90 days and then deleted. You can erase a customer's data when they ask, with `/forget`, and export what is held about them. Your company's privacy policy should say that you use an automated assistant, and the assistant introduces itself as a virtual attendant whenever it is asked. What Turbo Notify keeps on its side follows your plan's retention.
+> The virtual attendant keeps your customers' conversations, each customer's file and what you teach it about the business on this computer, in the folder we chose together. Anyone with access to that folder sees all of it. The text of messages is kept for 90 days and then deleted; the summary of the conversations and each customer's file stay until you use `/forget`. You can erase a customer's data when they ask, with `/forget`, and export what is held about them. Your company's privacy policy should say that you use an automated assistant, and the assistant introduces itself as a virtual attendant whenever it is asked. What Turbo Notify keeps on its side follows your plan's retention.
 
 ## What the helper does
 

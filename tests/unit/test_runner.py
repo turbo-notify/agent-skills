@@ -155,7 +155,7 @@ def test_a_leak_is_blocked_before_the_runner_sends_anything(tmp_path: Path) -> N
         rules=[("contato do Bruno", f'{{"reply": "Ligue {f.BRUNO}"}}'), ("oi", '{"reply": "oi"}')]
     )
     cycle(cfg, api, harness, T0 + timedelta(minutes=1))
-    everything = json.dumps(api.replies) + json.dumps(api.sends)
+    everything = json.dumps([r[2] for r in api.replies]) + json.dumps([s[2] for s in api.sends])
     assert f.BRUNO not in everything
     assert load_state(ws, ANA).state is ContactState.HANDOFF
     assert any("pessoa" in r[2] for r in api.replies)
@@ -345,7 +345,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         self._record()
-        if self.path.endswith("/reply") and "msg_quota" in self.path:
+        if self.headers.get("Idempotency-Key") == "evt_2":
             self._answer(402, {"error": "payment_required"})
         else:
             self._answer(202, {"message_id": "msg_1"})
@@ -364,10 +364,11 @@ def test_the_rest_client_speaks_the_documented_api() -> None:
         assert len(events) == 1
         assert api.message_text(f.NUM, "msg_1") == "texto completo"
         assert api.message_text(f.NUM, "msg_gone") is None
-        api.reply(f.NUM, "msg_1", "Olá", "evt_1")
+        api.send(f.NUM, f.ANA, "Olá", "evt_1")
+        api.send(f.NUM, f.ANA, "como disse antes", "evt_3", quote="msg_" + "a" * 32)
         api.send(f.NUM, f.OWNER, "aviso", "n-1")
         with pytest.raises(ApiError) as caught:
-            api.reply(f.NUM, "msg_quota", "x", "evt_2")
+            api.send(f.NUM, f.ANA, "x", "evt_2")
         assert caught.value.status == 402 and caught.value.code == "payment_required"
         seen = _Handler.seen
         assert all(s["auth"] == f"Bearer {KEY}" for s in seen)
@@ -376,9 +377,18 @@ def test_the_rest_client_speaks_the_documented_api() -> None:
             and f"number_id={f.NUM}" in seen[0]["path"]
         )
         assert "ending_before=evt_x" in seen[0]["path"]
-        reply = next(s for s in seen if s["path"].endswith("/msg_1/reply"))
-        assert json.loads(reply["body"]) == {"content": {"text": "Olá"}} and reply["key"] == "evt_1"
-        send = next(s for s in seen if s["path"].endswith("/messages") and s["method"] == "POST")
+        posts = [s for s in seen if s["method"] == "POST"]
+        assert all(
+            s["path"].endswith("/messages") for s in posts
+        )  # no /reply route: a plain message
+        plain = next(s for s in posts if s["key"] == "evt_1")
+        assert json.loads(plain["body"]) == {
+            "to": {"number": "+" + f.ANA},
+            "content": {"text": "Olá"},
+        }
+        quoted = next(s for s in posts if s["key"] == "evt_3")
+        assert json.loads(quoted["body"])["quoted_message_id"] == "msg_" + "a" * 32
+        send = next(s for s in posts if s["key"] == "n-1")
         assert json.loads(send["body"]) == {
             "to": {"number": "+" + f.OWNER},
             "content": {"text": "aviso"},

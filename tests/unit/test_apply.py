@@ -21,6 +21,7 @@ from tn_assist.apply import (
     report_failure,
     resume_contact,
 )
+from tn_assist.deliver import outbox_add, outbox_pending
 from tn_assist.events import parse_events
 from tn_assist.ingest import ingest
 from tn_assist.memory import Card
@@ -55,7 +56,7 @@ def test_normal_reply_becomes_a_reply_with_idempotency_key(tmp_path: Path) -> No
     (reply,) = actions
     assert isinstance(reply, Reply)
     assert reply.idempotency_key == e["id"] and reply.text == "Custa R$ 49."
-    assert reply.to_message_id == e["data"]["id"]
+    assert reply.quote_message_id is None  # the new message is answered with a normal message
 
 
 def test_assist_mode_emits_drafts_not_replies(tmp_path: Path) -> None:  # AC28
@@ -146,6 +147,25 @@ def test_resume_restores_answering_and_closes_the_escalation(tmp_path: Path) -> 
     ]
 
 
+def test_a_quote_brings_an_earlier_message_of_the_same_customer_into_view(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    _, first = arrive(ws, "preciso entregar em Salvador", at=T0 - timedelta(hours=1))
+    item, _ = arrive(ws, "e o prazo?")
+    old = first["data"]["id"]
+    raw = json.dumps({"reply": "Para Salvador, 3 dias.", "quote": old})
+    (reply,) = apply_contact_decision(ws, item, parse_decision("contact", raw), T0, mode="auto")
+    assert isinstance(reply, Reply) and reply.quote_message_id == old
+
+
+def test_the_new_message_and_ids_from_elsewhere_are_never_quoted(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    item, e = arrive(ws, "oi")
+    for quote in (e["data"]["id"], "msg_" + "d" * 32, "not an id", 7):
+        raw = json.dumps({"reply": "Olá!", "quote": quote})
+        actions = apply_contact_decision(ws, item, parse_decision("contact", raw), T0, mode="auto")
+        assert [a.quote_message_id for a in actions if isinstance(a, Reply)] == [None], quote
+
+
 def test_opt_out_sets_do_not_contact_and_confirms_once(tmp_path: Path) -> None:  # AC27
     ws = make_workspace(tmp_path)
     item, _ = arrive(ws, "parar")
@@ -155,6 +175,26 @@ def test_opt_out_sets_do_not_contact_and_confirms_once(tmp_path: Path) -> None: 
     assert kinds(actions) == ["Reply"] and load_state(ws, ANA).state is ContactState.DO_NOT_CONTACT
     item2, _ = arrive(ws, "oi?", at=T0 + timedelta(minutes=1))
     assert apply_contact_decision(ws, item2, decide(reply="oi"), T0, mode="auto") == []
+
+
+def test_opt_out_drops_a_reply_that_was_queued_but_not_delivered(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = make_workspace(tmp_path)
+    queued = {
+        "op": "reply",
+        "message_id": "msg_1",
+        "text": "promo",
+        "idempotency_key": "k-old",
+        "contact": f.ANA,
+    }
+    other = {**queued, "idempotency_key": "k-other", "contact": f.BRUNO}
+    outbox_add(ws, [queued, other], now=T0)
+    item, _ = arrive(ws, "parar")
+    apply_contact_decision(
+        ws, item, decide(reply="Ok, parei.", state="do_not_contact"), T0, mode="auto"
+    )
+    assert [op["idempotency_key"] for op in outbox_pending(ws)] == ["k-other"]
 
 
 def test_per_contact_hourly_cap_pauses_the_contact(tmp_path: Path) -> None:

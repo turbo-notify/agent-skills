@@ -32,7 +32,8 @@ Mode = Literal["auto", "assist"]
 MAX_REPLY_CHARS = 4000
 _FACT_KEY = re.compile(r"^[a-z0-9_]{1,40}$")
 _LANG = re.compile(r"^[a-z]{2,3}(-[A-Za-z]{2,4})?$")
-_CONTACT_KEYS = frozenset({"reply", "facts", "escalate", "language", "state"})
+_CONTACT_KEYS = frozenset({"reply", "facts", "escalate", "language", "state", "quote"})
+_MESSAGE_ID = re.compile(r"^msg_[0-9a-f]{32}$")
 _CONSOLE_KEYS = frozenset({"reply", "command"})
 _URGENCY = ("low", "normal", "high")
 LOOP_MIN_CHARS = 12
@@ -65,12 +66,15 @@ class Decision:
     language: str | None = None
     state: str | None = None
     command: str | None = None
+    quote: str | None = None
 
 
 @dataclass(frozen=True)
 class Reply:
+    """A normal message to the customer. ``quote_message_id`` is an EARLIER message, if any."""
+
     contact: str
-    to_message_id: str
+    quote_message_id: str | None
     text: str
     idempotency_key: str
 
@@ -81,7 +85,7 @@ class Draft:
     contact: str
     text: str
     event_id: str
-    to_message_id: str
+    quote_message_id: str | None
 
 
 @dataclass(frozen=True)
@@ -171,7 +175,10 @@ def parse_decision(role: Role, raw: str) -> Decision:
     state = data.get("state")
     if state not in (None, "do_not_contact"):
         raise InvalidDecision("state can only be do_not_contact")
-    return Decision(reply, tuple(facts), escalation, language, state)
+    quote = data.get("quote")
+    if not isinstance(quote, str) or not _MESSAGE_ID.match(quote):
+        quote = None  # a quote is a nicety: a bad id means a plain message, not a failed turn
+    return Decision(reply, tuple(facts), escalation, language, state, quote=quote)
 
 
 @dataclass(frozen=True)
@@ -234,7 +241,7 @@ def _add_draft(
     contact: str,
     text: str,
     event_id: str,
-    message_id: str,
+    quote_message_id: str | None,
     now: datetime,
     *,
     blocked: bool = False,
@@ -249,13 +256,13 @@ def _add_draft(
             "contact": contact,
             "text": text,
             "event_id": event_id,
-            "to_message_id": message_id,
+            "quote_message_id": quote_message_id,
             "created_at": utc_iso(now),
             "blocked": blocked,
         }
     )
     write_json_atomic(_drafts_path(ws), {"next": number + 1, "drafts": drafts})
-    return Draft(number, contact, text, event_id, message_id)
+    return Draft(number, contact, text, event_id, quote_message_id)
 
 
 def pop_draft(ws: Workspace, number: int) -> dict[str, Any] | None:
@@ -314,6 +321,17 @@ def drop_drafts_for(ws: Workspace, contact: str) -> None:
     if isinstance(data, dict) and data.get("drafts"):
         data["drafts"] = [d for d in data["drafts"] if d.get("contact") != contact]
         write_json_atomic(_drafts_path(ws), data)
+
+
+def drop_outbox_for(ws: Workspace, contact: str) -> None:
+    """Forget deliveries still queued for a customer (an opt-out or erasure came after them)."""
+    folder = ws.path("outbox")
+    if not folder.is_dir():
+        return
+    for path in folder.glob("*.json"):
+        op = read_json(path, {})
+        if isinstance(op, dict) and contact in (op.get("contact"), op.get("to")):
+            path.unlink()
 
 
 def resume_contact(
@@ -445,20 +463,35 @@ class _Context:
     out: list[Action] = field(default_factory=list)
     blocked: bool = False
 
-    def _target(self) -> tuple[str, str]:
-        event_id = self.item.event_ids[-1]
-        lines = [ln for ln in read_lines(self.ws, self.key) if ln.event_id == event_id]
-        return event_id, (lines[0].message_id if lines else None) or ""
+    quote: str | None = None
+
+    def _event_id(self) -> str:
+        return self.item.event_ids[-1]
+
+    def _quote_target(self) -> str | None:
+        """An EARLIER message of this customer's own conversation, or nothing.
+
+        The newest message is answered with a normal message, so it is never the quote. An id the
+        model made up or took from somewhere else is never used.
+        """
+        if not self.quote:
+            return None
+        newest = self._event_id()
+        lines = read_lines(self.ws, self.key)
+        if any(ln.message_id == self.quote and ln.event_id == newest for ln in lines):
+            return None
+        return self.quote if any(ln.message_id == self.quote for ln in lines) else None
 
     def _emit(self, text: str, *, blocked: bool = False) -> None:
-        event_id, message_id = self._target()
+        event_id = self._event_id()
+        quote_id = self._quote_target()
         action: Action
         if self.mode == "assist":
             action = _add_draft(
-                self.ws, str(self.key), text, event_id, message_id, self.now, blocked=blocked
+                self.ws, str(self.key), text, event_id, quote_id, self.now, blocked=blocked
             )
         else:
-            action = Reply(str(self.key), message_id, text, event_id)
+            action = Reply(str(self.key), quote_id, text, event_id)
             # what we say is part of the conversation: the next turn must see it
             append_line(
                 self.ws,
@@ -533,7 +566,7 @@ def apply_contact_decision(
     record = load_state(ws, key)
     if record.state is not ContactState.ACTIVE or load_config(ws).get("paused"):
         return []
-    ctx = _Context(ws, key, item, now, mode, guard)
+    ctx = _Context(ws, key, item, now, mode, guard, quote=decision.quote)
     policy = Policy.load(ws)
     lang = _lang(ws)
 
@@ -562,6 +595,7 @@ def apply_contact_decision(
             replace(load_state(ws, key), state=ContactState.DO_NOT_CONTACT, since=utc_iso(now)),
         )
         drop_drafts_for(ws, str(key))  # nothing prepared before the opt-out may go out afterwards
+        drop_outbox_for(ws, str(key))  # nor a reply that was queued but not yet delivered
         ctx.say(decision.reply or t("dnc_default", lang))
         if not ctx.blocked:
             _remember(ws, key, decision, now)

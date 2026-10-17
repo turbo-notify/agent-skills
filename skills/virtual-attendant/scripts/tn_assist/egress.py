@@ -38,6 +38,9 @@ class EgressVerdict:
     reasons: tuple[str, ...] = ()
 
 
+NOTE_PREFIX = "note_"
+
+
 def _normalize(text: str) -> str:
     """What a reader would see: compatibility forms folded, invisible characters gone, every
     Unicode dash and space turned into a plain one. Detection runs on this, never on raw text."""
@@ -137,7 +140,14 @@ def _other_contacts(ws: Workspace, contact: ContactKey) -> tuple[set[str], set[s
             except InvalidContactKey:
                 continue
             fact = card.get("name")
-            if fact and len(fact.value) >= 4:
+            # A name the model inferred from a stranger's message is attacker-controlled: a
+            # one-word "name" such as a common word would block other customers' replies. Only a
+            # full name, or one a person confirmed, goes on the list.
+            if (
+                fact
+                and len(fact.value) >= 4
+                and (fact.source != "inferred" or len(fact.value.split()) >= 2)
+            ):
                 names.add(fact.value)
     return numbers, names
 
@@ -146,7 +156,11 @@ def _own_text(ws: Workspace, contact: ContactKey) -> str:
     """Only what this person said, or what a human confirmed about them. Facts the model inferred
     are left out on purpose: the model could otherwise whitelist a leak by recording it first."""
     said = [ln.text for ln in read_lines(ws, contact) if ln.role == "contact"]
-    confirmed = [f.value for f in Card.load(ws, contact).facts() if f.source != "inferred"]
+    confirmed = [
+        f.value
+        for f in Card.load(ws, contact).facts()
+        if f.source != "inferred" and not f.key.startswith(NOTE_PREFIX)
+    ]
     return " ".join(said + confirmed + [str(contact)])
 
 
@@ -154,6 +168,11 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
     reasons: set[str] = set()
     text = _normalize(text)
     public_text, internal_text = _knowledge_texts(ws)
+    # What the team wrote about this customer is for the team: it must not come back as a quote.
+    notes = " ".join(
+        f.value for f in Card.load(ws, contact).facts() if f.key.startswith(NOTE_PREFIX)
+    )
+    internal_text = f"{internal_text}\n{notes}" if notes else internal_text
     own_text = _normalize(_own_text(ws, contact))
     public_text = _normalize(public_text)
     allowed_digits = {_canonical(d) for d in _digit_runs(public_text + " " + own_text)}
@@ -199,7 +218,7 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
     if any(m.lower() in text.lower() for m in markers):
         reasons.add("non_public")
     if internal_text:
-        hidden = _shingles(internal_text) - _shingles(public_text)
+        hidden = _shingles(internal_text) - _shingles(public_text) - _shingles(own_text)
         if hidden & _shingles(text):
             reasons.add("non_public")
 
