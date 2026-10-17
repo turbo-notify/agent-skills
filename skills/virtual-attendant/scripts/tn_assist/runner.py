@@ -359,7 +359,7 @@ def _hydrate(cfg: RunnerConfig, api: Api, item: WorkItem) -> None:
 
 
 def _role(item: WorkItem) -> Role:
-    return item.kind  # type: ignore[return-value]
+    return item.kind
 
 
 def _decide(

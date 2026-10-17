@@ -224,7 +224,12 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
             reasons.add("other_contact")
 
     markers = SourceRegistry.load(ws).non_public_markers()
-    if any(m.lower() in text.lower() for m in markers):
+    squeezed = re.sub(r"\W", "", folded)  # spaced out or punctuated, a marker is still a marker
+    if any(
+        m.lower() in text.lower()
+        or (len(squeezed_m := re.sub(r"\W", "", _fold(m))) >= 6 and squeezed_m in squeezed)
+        for m in markers
+    ):
         reasons.add("non_public")
     if internal_text:
         hidden = _shingles(internal_text) - _shingles(public_text) - _shingles(own_text)

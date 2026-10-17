@@ -44,7 +44,6 @@ class Policy:
     reply_cap_per_hour: int = 6
     reply_cap_per_day: int = 30
     handoff_reminder_hours: int = 4
-    auto_resume_after_hours: int | None = None
 
     @classmethod
     def load(cls, ws: Workspace) -> Policy:

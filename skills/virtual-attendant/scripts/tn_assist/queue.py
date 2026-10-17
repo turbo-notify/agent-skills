@@ -17,7 +17,7 @@ from tn_assist.paths import Workspace
 from tn_assist.store import read_json, write_json_atomic
 from tn_assist.timeutil import parse_iso, utc_iso
 
-Kind = Literal["contact", "admin", "attendant", "compaction", "retro"]
+Kind = Literal["contact", "admin", "attendant", "compaction"]
 _HYDRATED_KINDS = ("contact", "admin", "attendant")
 MAX_EVENT_IDS = 200
 

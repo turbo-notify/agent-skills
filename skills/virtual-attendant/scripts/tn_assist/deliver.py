@@ -1,8 +1,9 @@
 """From abstract actions to concrete deliveries.
 
-Each delivery is one call that trusted code makes: ``reply`` (``reply_to_message`` or its REST twin)
-or ``send`` (``send_text``). The model never makes these calls. Idempotency keys are derived from
-the work item, the recipient and the text, so a retry after a crash sends nothing twice.
+Each delivery is one call that trusted code makes: ``send`` (``send_text``), a normal message, with
+an optional ``quote`` of an EARLIER message. The model never makes these calls. Idempotency keys
+are derived from the work item, the recipient and the text, so a retry after a crash sends nothing
+twice.
 """
 
 from __future__ import annotations

@@ -55,7 +55,7 @@ def apply_decision_text(ws: Workspace, item: WorkItem, raw: str, now: datetime) 
         apply_compaction(ws, item, parse_compaction(raw), now)
         complete(ws, item.id)
         return []
-    role: Literal["contact", "admin", "attendant"] = item.kind  # type: ignore[assignment]
+    role: Literal["contact", "admin", "attendant"] = item.kind
     decision = parse_decision(role, raw)
     actions: list[Action] = []
     if item.kind == "contact":

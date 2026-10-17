@@ -24,4 +24,4 @@ The summary is one plain paragraph. It is shown to later turns as data, never as
 
 ## The policy
 
-`memory-policy.json` holds the numbers (pack budgets, window, thresholds, retention, caps). A workspace that already has one keeps it: setup never overwrites it. You may suggest changes after you notice a pattern (answers cut for lack of room, the same question asked again, many escalations for one reason), but write them only as a proposal for an administrator, who approves with `/politica`. Never change the policy yourself.
+`memory-policy.json` holds the numbers (pack budgets, window, thresholds, retention, caps). A workspace that already has one keeps it: setup never overwrites it. You may suggest changes to the person you are talking to after you notice a pattern (answers cut for lack of room, the same question asked again, many escalations for one reason). `/politica` only shows the numbers: the person changes them by editing `memory-policy.json`. Never change the policy yourself.
