@@ -177,6 +177,26 @@ def read_window(ws: Workspace, key: ContactKey, budget_tokens: int) -> list[Line
     return list(reversed(chosen))
 
 
+COMPACTION_CHUNK_MAX = 60
+
+
+def compaction_chunk(ws: Workspace, key: ContactKey, policy: Policy) -> list[Line]:
+    """The oldest uncompacted messages, leaving the newest ``window_turns // 2`` word for word."""
+    lines = [ln for ln in _uncompacted(ws, key) if ln.kind == "message"]
+    keep = max(1, policy.window_turns // 2)
+    if len(lines) <= keep:
+        return []
+    return lines[: min(COMPACTION_CHUNK_MAX, len(lines) - keep)]
+
+
+def lines_between(ws: Workspace, key: ContactKey, first: str, last: str) -> list[Line]:
+    lines = [ln for ln in read_lines(ws, key) if ln.kind == "message"]
+    ids = [ln.event_id for ln in lines]
+    if first not in ids or last not in ids:
+        return []
+    return lines[ids.index(first) : ids.index(last) + 1]
+
+
 def needs_compaction(ws: Workspace, key: ContactKey, policy: Policy) -> bool:
     total = sum(
         estimate_tokens(line.text) for line in _uncompacted(ws, key) if line.kind == "message"

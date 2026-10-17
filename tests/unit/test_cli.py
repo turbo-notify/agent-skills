@@ -387,3 +387,51 @@ def test_it_runs_as_a_real_command_on_the_system_python(tmp_path: Path) -> None:
         [interpreter, str(script), "status"], capture_output=True, text=True, env=env, check=False
     )
     assert json.loads(status.stdout)["mode"] == "assist"
+
+
+def test_a_long_conversation_queues_a_compaction_that_the_loop_can_run(tmp_path: Path) -> None:
+    from tests.support.workspace import make_workspace  # noqa: F401
+    from tn_assist.memory import append_line
+    from tn_assist.paths import ContactKey, Workspace
+
+    init(tmp_path)
+    ws = Workspace.open(tmp_path, f.ORG, f.NUM)
+    key = ContactKey.parse(f.ANA)
+    for i in range(100):
+        append_line(
+            ws,
+            key,
+            role="contact" if i % 2 == 0 else "assistant",
+            text=f"{i} " + "z" * 300,
+            event_id=f"evt_h{i:04d}",
+            at="2026-10-17T10:00:00Z",
+        )
+    run(tmp_path, "cursor", "--set", "evt_" + "0" * 32)
+    event = f.inbound_text(preview="oi de novo")
+    run(tmp_path, "ingest", "--file", write(tmp_path / "e.json", f.payload(event)), "--now", NOW)
+    _, leased = run(tmp_path, "next", "--kinds", "contact", "--now", NOW)
+    decision = tmp_path / "d.json"
+    decision.write_text('{"reply": "Oi!"}')
+    run(
+        tmp_path,
+        "apply",
+        "--item",
+        leased["item"]["id"],
+        "--decision-file",
+        str(decision),
+        "--now",
+        NOW,
+    )
+
+    _, job = run(tmp_path, "next", "--kinds", "compaction", "--now", NOW)
+    item = job["item"]
+    assert item is not None and item["kind"] == "compaction" and item["hydrate"] == []
+    _, pack = run(tmp_path, "pack", "--item", item["id"], "--now", NOW)
+    assert "0 zzz" in pack["pack"] and '"summary"' in pack["pack"]
+    result = tmp_path / "c.json"
+    result.write_text('{"summary": "Resumo da conversa.", "facts": []}')
+    code, out = run(
+        tmp_path, "apply", "--item", item["id"], "--decision-file", str(result), "--now", NOW
+    )
+    assert code == 0 and out["deliveries"] == []
+    assert list((tmp_path / f.ORG / f.NUM / "contacts" / f.ANA / "episodes").glob("*.md"))

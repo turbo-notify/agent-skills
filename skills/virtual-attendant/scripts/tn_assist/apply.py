@@ -19,10 +19,10 @@ from typing import Any, Literal, Union
 from tn_assist.config import load_config
 from tn_assist.egress import check_egress
 from tn_assist.i18n import t
-from tn_assist.memory import Card, Fact, Policy, read_lines
+from tn_assist.memory import Card, Fact, Policy, read_lines, write_episode
 from tn_assist.paths import ContactKey, Workspace
 from tn_assist.queue import WorkItem
-from tn_assist.sanitize import clean_fact_value
+from tn_assist.sanitize import clean_fact_value, neutralize_tags
 from tn_assist.state import ContactState, load_state, save_state
 from tn_assist.store import read_json, write_json_atomic
 from tn_assist.timeutil import parse_iso, utc_iso
@@ -172,6 +172,49 @@ def parse_decision(role: Role, raw: str) -> Decision:
     if state not in (None, "do_not_contact"):
         raise InvalidDecision("state can only be do_not_contact")
     return Decision(reply, tuple(facts), escalation, language, state)
+
+
+@dataclass(frozen=True)
+class Compaction:
+    summary: str
+    facts: tuple[DecisionFact, ...]
+
+
+def parse_compaction(raw: str) -> Compaction:
+    data = _extract_json(raw)
+    if not isinstance(data, dict) or set(data) - {"summary", "facts"} or "summary" not in data:
+        raise InvalidDecision("a compaction has a summary and optional facts")
+    summary = _text(data["summary"], "summary", 2000)
+    if not summary or not summary.strip():
+        raise InvalidDecision("empty summary")
+    facts_raw = data.get("facts", [])
+    if not isinstance(facts_raw, list):
+        raise InvalidDecision("facts must be a list")
+    facts = []
+    for entry in facts_raw:
+        if not isinstance(entry, dict) or set(entry) != {"key", "value"}:
+            raise InvalidDecision("each fact needs a key and a value")
+        key, value = entry["key"], entry["value"]
+        if not isinstance(key, str) or not _FACT_KEY.match(key) or not isinstance(value, str):
+            raise InvalidDecision("bad fact")
+        facts.append(DecisionFact(key, clean_fact_value(value)))
+    cleaned = "\n\n".join(
+        " ".join(neutralize_tags(part).split()) for part in summary.split("\n\n") if part.strip()
+    )
+    return Compaction(cleaned, tuple(facts))
+
+
+def apply_compaction(ws: Workspace, item: WorkItem, compaction: Compaction, now: datetime) -> Path:
+    assert item.contact is not None
+    key = ContactKey.parse(item.contact)
+    path = write_episode(
+        ws, key, compaction.summary, covers=(item.event_ids[0], item.event_ids[-1]), now=now
+    )
+    if compaction.facts:
+        card = Card.load(ws, key)
+        card.merge([Fact(f.key, f.value, "inferred", utc_iso(now)) for f in compaction.facts])
+        card.save()
+    return path
 
 
 # --- drafts -----------------------------------------------------------------------------

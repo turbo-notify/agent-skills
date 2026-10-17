@@ -21,7 +21,7 @@ from tn_assist.memory import (
     Line,
     Policy,
     episodes,
-    read_lines,
+    lines_between,
     read_lines_at,
     read_window,
 )
@@ -321,7 +321,7 @@ def _console_pack(
 def _compaction_pack(ws: Workspace, item: WorkItem, policy: Policy) -> Pack:
     assert item.contact is not None
     key = ContactKey.parse(item.contact)
-    chunk = [ln for ln in read_lines(ws, key) if ln.kind == "message"][: policy.window_turns]
+    chunk = lines_between(ws, key, item.event_ids[0], item.event_ids[-1])
     body = "\n".join(_render_line(ln) for ln in chunk)
     text = COMPACTION_CONTRACT + "\n" + body
     return Pack(text, estimate_tokens(text), ())
