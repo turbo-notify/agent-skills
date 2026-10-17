@@ -60,3 +60,15 @@ def test_complete_removes_the_lease(tmp_path: Path) -> None:
     assert leased is not None
     complete(ws, leased.id)
     assert lease_next(ws, ("contact",), ttl_s=60, now=T0 + timedelta(hours=1)) is None
+
+
+def test_event_ids_per_item_are_capped(tmp_path: Path) -> None:  # security review
+    from tn_assist.queue import MAX_EVENT_IDS
+
+    ws = make_workspace(tmp_path)
+    for start in range(0, 600, 100):
+        ids = tuple(f"evt_{i:05d}" for i in range(start, start + 100))
+        enqueue(ws, WorkItem.new("contact", "5511977776666", ids, T0))
+    leased = lease_next(ws, ("contact",), ttl_s=60, now=T0)
+    assert leased is not None and len(leased.event_ids) == MAX_EVENT_IDS
+    assert leased.event_ids[-1] == "evt_00599"

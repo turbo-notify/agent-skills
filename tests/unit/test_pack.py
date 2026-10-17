@@ -254,3 +254,26 @@ def test_shortening_keeps_the_closing_tag(tmp_path: Path) -> None:
     message = pack.text.split("## New message")[1]
     assert message.count("</customer_message_abcdef0123456789>") == 1
     assert "[message shortened]" in message
+
+
+def test_shrinking_always_terminates_for_awkward_lengths(tmp_path: Path) -> None:  # security review
+    ws = setup(tmp_path)
+    ws.path("memory-policy.json").write_text('{"pack_budget_contact": 50}')
+    for size in (399, 400, 401, 419, 420, 421, 800, 4001):
+        e = f.inbound_text(preview="x")
+        item = item_for(ws, f.ANA, e)
+        set_line_text(ws, ANA, e["id"], "d" * size)
+        pack = build_pack(ws, item, now=NOW)  # must return, whatever the budget
+        assert "customer_message_" in pack.text
+
+
+def test_many_messages_in_one_item_are_capped(tmp_path: Path) -> None:  # security review
+    ws = setup(tmp_path)
+    events = [f.inbound_text(preview=f"mensagem {i}") for i in range(300)]
+    ingest(ws, parse_events(f.payload(*events)), NOW)
+    ids = tuple(e["id"] for e in reversed(events))
+    item = enqueue(ws, WorkItem.new("contact", f.ANA, ids, NOW))
+    pack = build_pack(ws, item, now=NOW)
+    assert pack.text.count("<customer_message_") <= 21
+    assert "earlier messages omitted" in pack.text
+    assert pack.tokens <= Policy.load(ws).pack_budget_contact

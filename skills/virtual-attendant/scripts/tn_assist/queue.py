@@ -18,6 +18,7 @@ from tn_assist.timeutil import parse_iso, utc_iso
 
 Kind = Literal["contact", "admin", "attendant", "compaction", "retro"]
 _HYDRATED_KINDS = ("contact", "admin", "attendant")
+MAX_EVENT_IDS = 200
 
 
 @dataclass(frozen=True)
@@ -84,7 +85,7 @@ def _leased_dir(ws: Workspace):  # type: ignore[no-untyped-def]
 
 def _merge(old: WorkItem, new: WorkItem) -> WorkItem:
     ids = old.event_ids + tuple(e for e in new.event_ids if e not in old.event_ids)
-    return replace(old, event_ids=ids)
+    return replace(old, event_ids=ids[-MAX_EVENT_IDS:])  # older lines stay in the transcript
 
 
 def enqueue(ws: Workspace, item: WorkItem) -> WorkItem:

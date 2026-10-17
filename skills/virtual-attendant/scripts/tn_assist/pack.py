@@ -32,6 +32,9 @@ from tn_assist.tokens import estimate_tokens
 
 CORE_FILES = ("company.md", "tone.md", "handoff.md")
 MESSAGE_MAX_CHARS = 4000
+SHORTENED = " [message shortened]"
+MIN_BODY_CHARS = 400
+MAX_MESSAGES_PER_PACK = 20
 _INDEX_LINE = re.compile(r"^-\s+([\w./-]+\.md):\s*(.*)$")
 _WORD = re.compile(r"\w+", re.UNICODE)
 
@@ -165,10 +168,13 @@ def _message_bodies(lines: list[Line]) -> list[str]:
         if not body:
             body = f"[{line.type}, no text]"
         if len(body) > MESSAGE_MAX_CHARS:
-            body = body[:MESSAGE_MAX_CHARS] + " [message shortened]"
+            body = body[:MESSAGE_MAX_CHARS] + SHORTENED
         if line.truncated:
             body += " [text may be cut off]"
         bodies.append(body)
+    if len(bodies) > MAX_MESSAGES_PER_PACK:
+        omitted = len(bodies) - MAX_MESSAGES_PER_PACK + 1
+        bodies = [f"[{omitted} earlier messages omitted]"] + bodies[-(MAX_MESSAGES_PER_PACK - 1) :]
     return bodies
 
 
@@ -211,6 +217,20 @@ class _Parts:
         return "\n\n".join(s for s in sections if s)
 
 
+def _shorten_messages(parts: _Parts) -> bool:
+    """Halve every long body once. Returns False when nothing could get shorter."""
+    changed = False
+    shortened = []
+    for body in parts.message_bodies:
+        plain = body[: -len(SHORTENED)] if body.endswith(SHORTENED) else body
+        if len(plain) > MIN_BODY_CHARS:
+            body = plain[: max(MIN_BODY_CHARS, len(plain) // 2)] + SHORTENED
+            changed = True
+        shortened.append(body)
+    parts.message_bodies = shortened
+    return changed
+
+
 def _fit(parts: _Parts, budget: int) -> str:
     text = parts.render()
     while estimate_tokens(text) > budget:
@@ -220,11 +240,10 @@ def _fit(parts: _Parts, budget: int) -> str:
             parts.episodes.pop(0)
         elif parts.knowledge:
             parts.knowledge.pop()  # selected extras go first, core files last
-        elif any(len(b) > 400 for b in parts.message_bodies):
-            parts.message_bodies = [
-                b if len(b) <= 400 else b[: max(400, len(b) // 2)] + " [message shortened]"
-                for b in parts.message_bodies
-            ]
+        elif _shorten_messages(parts):
+            pass
+        elif len(parts.message_bodies) > 1:
+            parts.message_bodies.pop(0)  # oldest first; the newest message always stays
         else:
             break
         text = parts.render()
