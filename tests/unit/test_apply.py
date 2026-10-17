@@ -361,3 +361,41 @@ def test_a_blocked_reply_keeps_do_not_contact(tmp_path: Path) -> None:  # securi
     assert load_state(ws, ANA).state is ContactState.DO_NOT_CONTACT
     assert kinds(actions) == ["NotifyAdmins", "NotifySelfChat"]
     assert all(f.OWNER not in getattr(a, "text", "") for a in actions)
+
+
+def test_what_the_assistant_said_is_kept_in_the_transcript(
+    tmp_path: Path,
+) -> None:  # found in the live run
+    from tn_assist.memory import read_lines
+
+    ws = make_workspace(tmp_path)
+    item, e = arrive(ws, "quanto custa?")
+    apply_contact_decision(ws, item, decide(reply="Custa R$ 490."), T0, mode="auto")
+    lines = read_lines(ws, ANA)
+    assert [(ln.role, ln.text) for ln in lines] == [
+        ("contact", "quanto custa?"),
+        ("assistant", "Custa R$ 490."),
+    ]
+    item2, _ = arrive(ws, "e o mensal?", at=T0 + timedelta(minutes=2))
+    from tn_assist.pack import build_pack
+
+    assert "assistant: Custa R$ 490." in build_pack(ws, item2, now=T0).text
+
+
+def test_a_draft_is_not_in_the_transcript_until_it_is_sent(tmp_path: Path) -> None:
+    from tn_assist.memory import read_lines
+
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws, "quanto custa?")
+    apply_contact_decision(ws, item, decide(reply="Custa R$ 490."), T0, mode="assist")
+    assert [ln.role for ln in read_lines(ws, ANA)] == ["contact"]
+
+
+def test_the_handoff_message_is_kept_too(tmp_path: Path) -> None:
+    from tn_assist.memory import read_lines
+
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws, "quero falar com alguém")
+    esc = {"reason": "pede pessoa", "summary": "s", "urgency": "low"}
+    apply_contact_decision(ws, item, decide(escalate=esc), T0, mode="auto")
+    assert read_lines(ws, ANA)[-1].role == "assistant"

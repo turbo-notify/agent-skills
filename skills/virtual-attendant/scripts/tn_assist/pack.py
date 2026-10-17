@@ -150,9 +150,12 @@ _one_line = one_line
 
 
 def _render_line(line: Line) -> str:
-    who = {"contact": "customer", "assistant": "assistant", "attendant_native": "attendant"}.get(
-        line.role, line.role
-    )
+    who = {
+        "contact": "customer",
+        "assistant": "assistant",
+        "attendant_native": "attendant",
+        "attendant": "attendant",
+    }.get(line.role, line.role)
     suffix = " [text may be cut off]" if line.truncated else ""
     if line.kind == "gap":
         return "[the assistant was offline here; some messages may be missing]"

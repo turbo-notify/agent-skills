@@ -44,7 +44,7 @@ from tn_assist.commands import (
 )
 from tn_assist.config import load_config, save_config
 from tn_assist.i18n import t
-from tn_assist.memory import Card, Fact, Policy, read_lines
+from tn_assist.memory import Card, Fact, Policy, append_line, read_lines
 from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
 from tn_assist.queue import pending_count
 from tn_assist.sanitize import clean_fact_value
@@ -352,6 +352,14 @@ def _send(ws: Workspace, cmd: Command, role: Role, now: datetime) -> CommandResu
     record = load_state(ws, key)
     stamps = list(record.counters.get("replies", []))[-99:] + [utc_iso(now)]
     save_state(ws, key, replace(record, counters={**record.counters, "replies": stamps}))
+    append_line(
+        ws,
+        key,
+        role="attendant" if replacement else "assistant",
+        text=text,
+        event_id=f"reply-{draft['event_id']}",
+        at=utc_iso(now),
+    )
     reply = Reply(draft["contact"], draft["to_message_id"], text, draft["event_id"])
     return CommandResult(t("send_done", lang, name=_name(ws, key)), [reply])
 

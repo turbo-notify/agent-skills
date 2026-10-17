@@ -164,8 +164,10 @@ def test_takeover_by_number(tmp_path: Path) -> None:
     assert record.state is ContactState.PAUSED and record.human_takeover
 
 
-def _draft(ws: Workspace, reply: str = "Custa R$ 490.") -> Draft:
-    e = customer(ws)
+def _draft(
+    ws: Workspace, reply: str = "Custa R$ 490.", text: str = "oi, quero o plano anual"
+) -> Draft:
+    e = customer(ws, text=text)
     item = enqueue(ws, WorkItem.new("contact", f.ANA, (e["id"],), NOW))
     d = parse_decision("contact", json.dumps({"reply": reply}))
     draft = apply_contact_decision(ws, item, d, NOW, mode="assist")[0]
@@ -485,3 +487,23 @@ def test_while_paused_only_an_admin_can_send_a_draft(tmp_path: Path) -> None:  #
     refused = run(ws, f"/enviar {draft.number}", role="attendant", actor="self")
     assert refused.actions == [] and len(list_drafts(ws)) == 1
     assert len(run(ws, f"/enviar {draft.number}").actions) == 1
+
+
+def test_a_sent_draft_enters_the_transcript_with_who_wrote_it(
+    tmp_path: Path,
+) -> None:  # found in the live run
+    from tn_assist.memory import read_lines
+
+    ws = setup(tmp_path)
+    draft = _draft(ws)
+    run(ws, f"/enviar {draft.number}")
+    assert read_lines(ws, ANA)[-1].role == "assistant"
+    draft2 = _draft(ws, text="e o plano mensal, quanto custa?")
+    run(
+        ws,
+        f"/enviar {draft2.number} Oi Ana, o anual sai por R$ 490 no pix.",
+        role="attendant",
+        actor="self",
+    )
+    last = read_lines(ws, ANA)[-1]
+    assert (last.role, last.text) == ("attendant", "Oi Ana, o anual sai por R$ 490 no pix.")

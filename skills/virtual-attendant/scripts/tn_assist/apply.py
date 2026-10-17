@@ -19,7 +19,7 @@ from typing import Any, Literal, Union
 from tn_assist.config import load_config
 from tn_assist.egress import check_egress
 from tn_assist.i18n import t
-from tn_assist.memory import Card, Fact, Policy, read_lines, write_episode
+from tn_assist.memory import Card, Fact, Policy, append_line, read_lines, write_episode
 from tn_assist.paths import ContactKey, Workspace
 from tn_assist.queue import WorkItem
 from tn_assist.sanitize import clean_fact_value, clean_summary
@@ -459,6 +459,15 @@ class _Context:
             )
         else:
             action = Reply(str(self.key), message_id, text, event_id)
+            # what we say is part of the conversation: the next turn must see it
+            append_line(
+                self.ws,
+                self.key,
+                role="assistant",
+                text=text,
+                event_id=f"reply-{event_id}",
+                at=utc_iso(self.now),
+            )
         self.out.append(self.guard(action) if self.guard else action)
 
     def say(self, text: str) -> None:
