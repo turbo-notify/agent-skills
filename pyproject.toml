@@ -26,7 +26,7 @@ target-version = "py39"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
-ignore = ["UP006", "UP007", "UP035", "UP045"]
+ignore = ["UP006", "UP007", "UP035"]
 
 [tool.mypy]
 python_version = "3.9"
@@ -36,3 +36,6 @@ files = ["skills/virtual-attendant/scripts"]
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.lint.isort]
+known-first-party = ["tn_assist"]

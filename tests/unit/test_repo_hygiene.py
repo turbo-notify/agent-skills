@@ -1,4 +1,5 @@
 """The module is public, so its hygiene is a tested property, not a habit."""
+
 from __future__ import annotations
 
 import subprocess
