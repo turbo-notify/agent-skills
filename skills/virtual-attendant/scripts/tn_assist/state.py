@@ -57,13 +57,24 @@ def save_state(ws: Workspace, key: ContactKey, record: ContactRecord) -> None:
     write_json_atomic(_path(ws, key), record.to_json())
 
 
-def mark_takeover(ws: Workspace, key: ContactKey, at: str) -> ContactRecord:
-    record = replace(
-        load_state(ws, key),
-        state=ContactState.PAUSED,
-        reason="takeover",
-        human_takeover=True,
-        since=at,
-    )
+def pause_unless_opted_out(
+    ws: Workspace, key: ContactKey, *, reason: str, at: str, takeover: bool = False
+) -> ContactRecord:
+    """Pause the assistant for a contact. An opt-out is never weakened by a pause or a takeover."""
+    current = load_state(ws, key)
+    if current.state is ContactState.DO_NOT_CONTACT:
+        record = replace(current, human_takeover=current.human_takeover or takeover)
+    else:
+        record = replace(
+            current,
+            state=ContactState.PAUSED,
+            reason=reason,
+            human_takeover=current.human_takeover or takeover,
+            since=at,
+        )
     save_state(ws, key, record)
     return record
+
+
+def mark_takeover(ws: Workspace, key: ContactKey, at: str) -> ContactRecord:
+    return pause_unless_opted_out(ws, key, reason="takeover", at=at, takeover=True)

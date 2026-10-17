@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -405,3 +406,82 @@ def test_unknown_numbers_are_explained(tmp_path: Path, lang: str) -> None:
     ws = setup(tmp_path, lang=lang)
     out = run(ws, "/cliente 123").text
     assert out
+
+
+def _opt_out(ws: Workspace, number: str = f.ANA) -> None:
+    e = customer(ws, number, text="parar de receber")
+    item = enqueue(ws, WorkItem.new("contact", number, (e["id"],), NOW))
+    d = parse_decision("contact", '{"reply": "Tudo bem.", "state": "do_not_contact"}')
+    apply_contact_decision(ws, item, d, NOW, mode="auto")
+
+
+def test_an_attendant_cannot_lift_the_global_pause(tmp_path: Path) -> None:  # security review
+    ws = setup(tmp_path)
+    run(ws, "/pausar")
+    result = run(ws, "/retomar todos", role="attendant", actor="self")
+    assert load_config(ws)["paused"] is True and "administrador" in result.text
+    run(ws, "/retomar todos")
+    assert load_config(ws)["paused"] is False
+
+
+def test_resume_never_brings_back_someone_who_opted_out(tmp_path: Path) -> None:  # security review
+    ws = setup(tmp_path)
+    _opt_out(ws)
+    refused = run(ws, f"/retomar {f.ANA}", role="attendant", actor="self")
+    assert (
+        load_state(ws, ANA).state is ContactState.DO_NOT_CONTACT and "administrador" in refused.text
+    )
+    asked = run(ws, f"/retomar {f.ANA}")
+    assert load_state(ws, ANA).state is ContactState.DO_NOT_CONTACT and "/confirmar" in asked.text
+    code = asked.text.split("/confirmar")[1].split()[0]
+    run(ws, f"/confirmar {code}")
+    assert load_state(ws, ANA).state is ContactState.ACTIVE  # an admin, knowingly, with a code
+
+
+def test_takeover_pause_and_native_messages_keep_the_opt_out(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = setup(tmp_path)
+    _opt_out(ws)
+    run(ws, f"/assumir {f.ANA}", role="attendant", actor="self")
+    assert load_state(ws, ANA).state is ContactState.DO_NOT_CONTACT
+    run(ws, f"/pausar {f.ANA}")
+    assert load_state(ws, ANA).state is ContactState.DO_NOT_CONTACT
+    ingest(ws, parse_events(f.payload(f.native_outbound_to_contact(preview="Oi!"))), NOW)
+    record = load_state(ws, ANA)
+    assert record.state is ContactState.DO_NOT_CONTACT and record.human_takeover is True
+
+
+def test_drafts_of_a_contact_who_opts_out_are_dropped_and_cannot_be_sent(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = setup(tmp_path)
+    draft = _draft(ws)
+    assert len(list_drafts(ws)) == 1
+    _opt_out(ws)
+    assert list_drafts(ws) == []
+    result = run(ws, f"/enviar {draft.number}")
+    assert result.actions == []
+
+
+def test_a_stale_draft_for_an_opted_out_contact_is_refused(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = setup(tmp_path)
+    draft = _draft(ws)
+    # opt-out recorded behind the draft's back (state written directly)
+    from tn_assist.state import save_state
+
+    save_state(ws, ANA, replace(load_state(ws, ANA), state=ContactState.DO_NOT_CONTACT))
+    result = run(ws, f"/enviar {draft.number} Oi de novo")
+    assert result.actions == [] and "pediu para não receber" in result.text
+    assert list_drafts(ws) == []
+
+
+def test_while_paused_only_an_admin_can_send_a_draft(tmp_path: Path) -> None:  # security review
+    ws = setup(tmp_path)
+    draft = _draft(ws)
+    run(ws, "/pausar")
+    refused = run(ws, f"/enviar {draft.number}", role="attendant", actor="self")
+    assert refused.actions == [] and len(list_drafts(ws)) == 1
+    assert len(run(ws, f"/enviar {draft.number}").actions) == 1

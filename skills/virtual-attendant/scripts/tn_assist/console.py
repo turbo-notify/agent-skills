@@ -25,7 +25,9 @@ from tn_assist.admins import (
 )
 from tn_assist.apply import (
     Action,
+    OptedOut,
     Reply,
+    drop_drafts_for,
     list_drafts,
     open_escalations,
     pop_draft,
@@ -52,7 +54,14 @@ from tn_assist.sources import (
     SourceRegistry,
     WriteToolError,
 )
-from tn_assist.state import ContactRecord, ContactState, load_state, mark_takeover, save_state
+from tn_assist.state import (
+    ContactRecord,
+    ContactState,
+    load_state,
+    mark_takeover,
+    pause_unless_opted_out,
+    save_state,
+)
 from tn_assist.store import append_jsonl, read_json, write_json_atomic
 from tn_assist.timeutil import parse_iso, utc_iso
 
@@ -270,10 +279,14 @@ def _queue(ws: Workspace) -> str:
     return "\n".join(lines)
 
 
-def _resume(ws: Workspace, cmd: Command, actor: str, now: datetime) -> CommandResult:
+def _resume(
+    ws: Workspace, cmd: Command, role: Role, actor: str, now: datetime, confirmed: bool
+) -> CommandResult:
     lang = _lang(ws)
     arg = cmd.args[0] if cmd.args else ""
     if _fold(arg) in ("todos", "tudo", "all"):
+        if role != "admin":
+            return CommandResult(t("resume_all_admin_only", lang))
         config = load_config(ws)
         config["paused"] = False
         save_config(ws, config)
@@ -290,7 +303,15 @@ def _resume(ws: Workspace, cmd: Command, actor: str, now: datetime) -> CommandRe
         key, problem = _resolve(ws, arg)
     if key is None:
         return _problem(ws, problem or "not_found")
-    resume_contact(ws, key, by=actor, now=now)
+    opted_out = load_state(ws, key).state is ContactState.DO_NOT_CONTACT
+    if opted_out and role != "admin":
+        return CommandResult(t("dnc_admin_only", lang, name=_name(ws, key)))
+    if opted_out and not confirmed:
+        return CommandResult(t("confirm_ask", lang, code=issue_confirmation(ws, actor, cmd, now)))
+    try:
+        resume_contact(ws, key, by=actor, now=now, override_opt_out=opted_out and confirmed)
+    except OptedOut:
+        return CommandResult(t("dnc_admin_only", lang, name=_name(ws, key)))
     return CommandResult(t("resume_done", lang, name=_name(ws, key)))
 
 
@@ -302,10 +323,11 @@ def _takeover(ws: Workspace, cmd: Command, now: datetime) -> CommandResult:
     if key is None:
         return _problem(ws, problem or "not_found")
     mark_takeover(ws, key, utc_iso(now))
+    drop_drafts_for(ws, str(key))
     return CommandResult(t("takeover_done", lang, name=_name(ws, key)))
 
 
-def _send(ws: Workspace, cmd: Command, now: datetime) -> CommandResult:
+def _send(ws: Workspace, cmd: Command, role: Role, now: datetime) -> CommandResult:
     lang = _lang(ws)
     if not cmd.args or not cmd.args[0].isdigit():
         return CommandResult(t("send_needs_number", lang))
@@ -313,6 +335,12 @@ def _send(ws: Workspace, cmd: Command, now: datetime) -> CommandResult:
     draft = next((d for d in list_drafts(ws) if d["n"] == number), None)
     if draft is None:
         return CommandResult(t("send_unknown", lang, n=str(number)))
+    target = ContactKey.parse(draft["contact"])
+    if load_state(ws, target).state is ContactState.DO_NOT_CONTACT:
+        pop_draft(ws, number)
+        return CommandResult(t("dnc_blocked", lang, name=_name(ws, target)))
+    if load_config(ws).get("paused") and role != "admin":
+        return CommandResult(t("paused_admin_only", lang))
     replacement = cmd.rest.strip()
     if draft.get("blocked") and not replacement:
         return CommandResult(t("send_blocked", lang, n=str(number)))
@@ -657,16 +685,7 @@ def _pause(ws: Workspace, cmd: Command, now: datetime) -> CommandResult:
     if len(found) != 1:
         return CommandResult(t("not_found", lang))
     key = found[0]
-    save_state(
-        ws,
-        key,
-        replace(
-            load_state(ws, key),
-            state=ContactState.PAUSED,
-            reason="paused_by_admin",
-            since=utc_iso(now),
-        ),
-    )
+    pause_unless_opted_out(ws, key, reason="paused_by_admin", at=utc_iso(now))
     return CommandResult(t("paused_one", lang, name=_name(ws, key)))
 
 
@@ -823,9 +842,9 @@ def run_command(
         "done": lambda: _done(ws),
         "public": lambda: _publish(ws, public=True),
         "internal": lambda: _publish(ws, public=False),
-        "resume": lambda: _resume(ws, cmd, actor, now),
+        "resume": lambda: _resume(ws, cmd, role, actor, now, confirmed),
         "takeover": lambda: _takeover(ws, cmd, now),
-        "send": lambda: _send(ws, cmd, now),
+        "send": lambda: _send(ws, cmd, role, now),
         "contact": lambda: _contact_card(ws, cmd),
         "thread": lambda: _thread(ws, cmd),
         "note": lambda: _note(ws, cmd, role, now),

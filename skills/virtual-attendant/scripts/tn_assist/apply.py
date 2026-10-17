@@ -94,7 +94,15 @@ class NotifySelfChat:
     text: str
 
 
-Action = Union[Reply, Draft, NotifyAdmins, NotifySelfChat]
+@dataclass(frozen=True)
+class Say:
+    """An answer to one person who is using the console. ``to`` is a number or ``"self"``."""
+
+    to: str
+    text: str
+
+
+Action = Union[Reply, Draft, NotifyAdmins, NotifySelfChat, Say]
 Guard = Callable[[Action], Action]
 
 
@@ -254,7 +262,22 @@ def _notices(text: str) -> list[Action]:
 # --- state machine ----------------------------------------------------------------------
 
 
-def resume_contact(ws: Workspace, key: ContactKey, *, by: str, now: datetime) -> None:
+class OptedOut(Exception):
+    """The customer asked not to be contacted; only an explicit override may change that."""
+
+
+def drop_drafts_for(ws: Workspace, contact: str) -> None:
+    data = read_json(_drafts_path(ws), {})
+    if isinstance(data, dict) and data.get("drafts"):
+        data["drafts"] = [d for d in data["drafts"] if d.get("contact") != contact]
+        write_json_atomic(_drafts_path(ws), data)
+
+
+def resume_contact(
+    ws: Workspace, key: ContactKey, *, by: str, now: datetime, override_opt_out: bool = False
+) -> None:
+    if load_state(ws, key).state is ContactState.DO_NOT_CONTACT and not override_opt_out:
+        raise OptedOut(str(key))
     record = replace(
         load_state(ws, key),
         state=ContactState.ACTIVE,
@@ -486,6 +509,7 @@ def apply_contact_decision(
             key,
             replace(load_state(ws, key), state=ContactState.DO_NOT_CONTACT, since=utc_iso(now)),
         )
+        drop_drafts_for(ws, str(key))  # nothing prepared before the opt-out may go out afterwards
         ctx.say(decision.reply or t("dnc_default", lang))
         if not ctx.blocked:
             _remember(ws, key, decision, now)

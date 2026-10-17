@@ -281,6 +281,22 @@ CONSOLE_STRINGS: dict[str, dict[str, str]] = {
             "Asked not to be contacted: {dnc}\nMessages today: {today}\nDrafts: {drafts}"
         ),
     },
+    "resume_all_admin_only": {
+        "pt": "Só um administrador pode voltar a atender todos de uma vez.",
+        "en": "Only an admin can bring the assistant back for everyone at once.",
+    },
+    "dnc_admin_only": {
+        "pt": "{name} pediu para não receber mensagens. Só um administrador pode desfazer isso.",
+        "en": "{name} asked not to receive messages. Only an admin can undo that.",
+    },
+    "dnc_blocked": {
+        "pt": "{name} pediu para não receber mensagens. Nada foi enviado.",
+        "en": "{name} asked not to receive messages. Nothing was sent.",
+    },
+    "paused_admin_only": {
+        "pt": "O assistente está pausado. Só um administrador pode enviar agora.",
+        "en": "The assistant is paused. Only an admin can send right now.",
+    },
     "send_done": {"pt": "Enviando para {name}.", "en": "Sending to {name}."},
     "send_unknown": {
         "pt": "Não existe o rascunho {n}. Veja /fila.",

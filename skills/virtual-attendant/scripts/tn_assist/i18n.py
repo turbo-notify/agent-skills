@@ -60,6 +60,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "pt": "agy plugin install https://github.com/turbo-notify/agent-skills",
         "en": "agy plugin install https://github.com/turbo-notify/agent-skills",
     },
+    "draft_notice": {
+        "pt": "Rascunho #{n} para {name} ({number}):\n{text}\nPara enviar: /enviar {n}. Para trocar o texto: /enviar {n} <novo texto>.",
+        "en": "Draft #{n} for {name} ({number}):\n{text}\nTo send it: /send {n}. To change the text: /send {n} <new text>.",
+    },
     "greeting_default": {
         "pt": "Olá! Sou o atendente virtual de {business}. Como posso ajudar?",
         "en": "Hi! I am the virtual attendant of {business}. How can I help?",
