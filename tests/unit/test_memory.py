@@ -180,3 +180,13 @@ def test_card_render_is_markdown_with_sources(tmp_path: Path) -> None:
     card = Card.load(ws, KEY)
     card.merge([Fact("name", "Ana Souza", "admin", "2026-10-17T10:00:00Z")])
     assert "Ana Souza" in card.render() and "admin" in card.render()
+
+
+def test_every_fact_source_is_covered_by_the_provenance_marker_stripper() -> (
+    None
+):  # security review
+    from tn_assist.memory import _RANK
+    from tn_assist.sanitize import clean_fact_value
+
+    for source in _RANK:
+        assert clean_fact_value(f"plano anual ({source})") == "plano anual", source

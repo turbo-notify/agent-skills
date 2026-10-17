@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+
+- Fix: a WhatsApp display name that is a word every reply uses (a greeting, a thank you, a plan or a weekday) no longer blocks other customers' replies, and the marker that strips a forged `(platform)` provenance from a fact is covered like the others.
+
 ## 0.2.2
 
 - Fix: the name WhatsApp shows for a customer is kept as a `platform` fact, so a one-word name of another customer is still kept out of replies and a fact the model infers from a customer's words can neither replace it nor forge a name.

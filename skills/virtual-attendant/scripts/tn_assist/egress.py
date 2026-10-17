@@ -13,7 +13,7 @@ import unicodedata
 from dataclasses import dataclass
 
 from tn_assist.config import admin_numbers
-from tn_assist.memory import Card, read_lines
+from tn_assist.memory import Card, Fact, read_lines
 from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
 from tn_assist.sources import SourceRegistry
 
@@ -132,6 +132,31 @@ def _knowledge_texts(ws: Workspace) -> tuple[str, str]:
     return "\n".join(public), "\n".join(internal)
 
 
+# Words a customer could set as their WhatsApp display name to make every reply that uses the word
+# look like a leak (a hand-off for everyone else). A one-word name from WhatsApp that is one of
+# these is not protected; a person-confirmed name always is.
+COMMON_WORDS = frozenset(
+    """obrigado obrigada valeu thanks thank hello hola ola oi ola bom boa dia tarde noite bye tchau
+    sim nao yes none nome name cliente customer loja store atendente suporte support empresa company
+    pedido order preco price valor total plano plan mensal anual monthly annual entrega delivery
+    prazo horario hours segunda terca quarta quinta sexta sabado domingo monday tuesday wednesday
+    thursday friday saturday sunday hoje amanha today tomorrow aqui here agora now ajuda help
+    produto product servico service desconto discount pagamento payment""".split()
+)
+
+
+def _protects(fact: Fact) -> bool:
+    """Whether another customer's name keeps replies from mentioning it.
+
+    A person-confirmed name always does, and so does any full name. A one-word name only when
+    WhatsApp reported it (the model's own inference from a stranger's words never counts) and it is
+    not a word every reply uses.
+    """
+    if fact.source in ("admin", "attendant") or len(fact.value.split()) >= 2:
+        return True
+    return fact.source == "platform" and _fold(fact.value).strip() not in COMMON_WORDS
+
+
 def _other_contacts(ws: Workspace, contact: ContactKey) -> tuple[set[str], set[str]]:
     numbers: set[str] = set(admin_numbers(ws))
     names: set[str] = set()
@@ -146,14 +171,7 @@ def _other_contacts(ws: Workspace, contact: ContactKey) -> tuple[set[str], set[s
             except InvalidContactKey:
                 continue
             fact = card.get("name")
-            # A name the model inferred from a stranger's message is attacker-controlled: a
-            # one-word "name" such as a common word would block other customers' replies. Only a
-            # full name, or one a person confirmed, goes on the list.
-            if (
-                fact
-                and len(fact.value) >= 4
-                and (fact.source != "inferred" or len(fact.value.split()) >= 2)
-            ):
+            if fact and len(fact.value) >= 4 and _protects(fact):
                 names.add(fact.value)
     return numbers, names
 

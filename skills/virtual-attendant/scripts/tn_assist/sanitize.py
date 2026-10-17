@@ -10,7 +10,7 @@ import re
 
 _TAG = re.compile(r"(customer|person)[_ -]?message", re.IGNORECASE)
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f‪-‮⁦-⁩]")
-_PROVENANCE = re.compile(r"\((?:admin|attendant|inferred)\)", re.IGNORECASE)
+_PROVENANCE = re.compile(r"\((?:admin|attendant|platform|inferred)\)", re.IGNORECASE)
 _LIST_LEAD = re.compile(r"^\s*(?:[-*+#>]+|\d+[.)])\s+")
 LINE_JOIN = " ⏎ "
 

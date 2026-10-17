@@ -262,3 +262,18 @@ def test_a_one_word_whatsapp_name_is_still_protected_but_a_model_fact_cannot_rep
     assert Card.load(ws, other).get("name").value == "Marcelo"  # type: ignore[union-attr]
     assert not verdict(ws, "O Marcelo também perguntou isso.").ok
     assert verdict(ws, "Obrigado pelo contato! O plano anual custa R$ 490.").ok
+
+
+def test_a_display_name_that_is_a_word_every_reply_uses_does_not_block_other_customers(
+    tmp_path: Path,
+) -> None:  # security review
+    ws = setup(tmp_path)
+    other = ContactKey.parse("5511933334444")
+    card = Card.load(ws, other)
+    card.merge([Fact("name", "Obrigado", "platform", "2026-10-17T10:00:00Z")])
+    card.save()
+    assert verdict(ws, "Obrigado pelo contato! O plano anual custa R$ 490.").ok
+    card = Card.load(ws, other)
+    card.merge([Fact("name", "Obrigado", "admin", "2026-10-17T10:05:00Z")])  # a person confirmed it
+    card.save()
+    assert not verdict(ws, "Obrigado pelo contato!").ok
