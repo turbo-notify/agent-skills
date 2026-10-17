@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import asdict, dataclass, field, replace
+from pathlib import Path
 from typing import Any
 
 from tn_assist.paths import ContactKey, Workspace
@@ -43,7 +44,7 @@ class ContactRecord:
         )
 
 
-def _path(ws: Workspace, key: ContactKey):  # type: ignore[no-untyped-def]
+def _path(ws: Workspace, key: ContactKey) -> Path:
     return ws.contact_dir(key) / "state.json"
 
 

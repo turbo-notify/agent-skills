@@ -313,8 +313,8 @@ def test_fact_values_are_one_plain_line(tmp_path: Path) -> None:  # security rev
     item, _ = arrive(ws)
     apply_contact_decision(ws, item, decision, T0, mode="auto")
     rendered = Card.load(ws, ANA).render()
-    assert len(rendered.splitlines()) == 1
-    assert "(admin)" not in rendered and Card.load(ws, ANA).get("name") is None
+    assert len(rendered.splitlines()) == len(Card.load(ws, ANA).facts())  # one line per fact
+    assert "(admin)" not in rendered and Card.load(ws, ANA).get("name").source == "inferred"  # type: ignore[union-attr]
 
 
 def test_card_render_stays_one_line_per_fact_even_if_the_file_was_edited(tmp_path: Path) -> None:

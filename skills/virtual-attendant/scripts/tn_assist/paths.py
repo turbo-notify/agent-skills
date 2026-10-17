@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import os
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
 ORG_ID_RE = re.compile(r"^org_[0-9a-f]{32}$")
 NUM_ID_RE = re.compile(r"^num_[0-9a-f]{32}$")
-_CONTACT_RE = re.compile(r"^\d{8,15}$")
+_CONTACT_RE = re.compile(r"^[0-9]{8,15}$")
 _PHONE_PUNCTUATION = " \t+()-."
 _DIR_MODE = 0o700
 
@@ -35,10 +36,18 @@ class ContactKey(str):
 
     @classmethod
     def parse(cls, raw: str) -> ContactKey:
-        text = "".join(ch for ch in raw.strip() if ch not in _PHONE_PUNCTUATION)
+        text = "".join(_ascii_digit(ch) for ch in raw.strip() if ch not in _PHONE_PUNCTUATION)
         if not _CONTACT_RE.match(text):
             raise InvalidContactKey("not a phone number")
         return cls(_canonical_brazilian_mobile(text))
+
+
+def _ascii_digit(ch: str) -> str:
+    """Any Unicode decimal digit (Arabic-Indic, Devanagari, full width) becomes its ASCII digit."""
+    folded = unicodedata.normalize("NFKC", ch)
+    if len(folded) == 1 and unicodedata.category(folded) == "Nd":
+        return str(unicodedata.digit(folded))
+    return folded
 
 
 def _canonical_brazilian_mobile(digits: str) -> str:

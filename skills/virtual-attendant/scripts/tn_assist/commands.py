@@ -10,6 +10,7 @@ import secrets
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Literal
 
 from tn_assist.paths import Workspace
@@ -151,7 +152,7 @@ def needs_confirmation(cmd: Command) -> bool:
     return cmd.name == "kb" and bool(cmd.args) and _fold(cmd.args[0]) in _REMOVE
 
 
-def _pending_path(ws: Workspace):  # type: ignore[no-untyped-def]
+def _pending_path(ws: Workspace) -> Path:
     return ws.path("pending-confirmations.json")
 
 

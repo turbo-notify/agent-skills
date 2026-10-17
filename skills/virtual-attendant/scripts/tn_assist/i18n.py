@@ -116,3 +116,8 @@ STRINGS: dict[str, dict[str, str]] = {
 def t(key: str, lang: Lang, **fields: str) -> str:
     """The text for ``key`` in ``lang`` with ``fields`` filled in."""
     return STRINGS[key][lang].format(**fields)
+
+
+from tn_assist.i18n_console import CONSOLE_STRINGS  # noqa: E402
+
+STRINGS.update(CONSOLE_STRINGS)

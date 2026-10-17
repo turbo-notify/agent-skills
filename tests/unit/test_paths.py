@@ -122,3 +122,10 @@ def test_foreign_ids_fail_closed(tmp_path: Path) -> None:
     rel_to_a = os.path.relpath(a.root / "secret.txt", b.root)
     with pytest.raises(PathEscapeError):
         b.path(rel_to_a)
+
+
+def test_contact_key_maps_every_unicode_digit_to_ascii() -> None:  # security review
+    arabic = "".join(chr(0x0660 + int(d)) for d in "5511966665555")
+    full_width = "".join(chr(0xFF10 + int(d)) for d in "5511966665555")
+    assert ContactKey.parse(arabic) == ContactKey("5511966665555")
+    assert ContactKey.parse(full_width) == ContactKey("5511966665555")

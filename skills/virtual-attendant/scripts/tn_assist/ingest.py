@@ -25,6 +25,7 @@ from tn_assist.events import (
     parse_events,
     sender_key,
 )
+from tn_assist.memory import Card, Fact
 from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
 from tn_assist.queue import Kind, WorkItem, enqueue
 from tn_assist.state import mark_takeover
@@ -133,6 +134,19 @@ def _recipient_key(event: Event) -> ContactKey | None:
         return None
 
 
+def _remember_name(ws: Workspace, key: ContactKey, event: Event, at: str) -> None:
+    """The name WhatsApp shows for the customer, kept as an inferred fact (people can override)."""
+    sender = event.data.get("from")
+    name = sender.get("name") if isinstance(sender, dict) else None
+    if not isinstance(name, str) or not name.strip():
+        return
+    card = Card.load(ws, key)
+    current = card.get("name")
+    if current is None or (current.source == "inferred" and current.value != name.strip()):
+        card.merge([Fact("name", name, "inferred", at)])
+        card.save()
+
+
 def _mark_gap(ws: Workspace, start: str, end: str) -> None:
     record_id = f"gap-{end}"
     append_jsonl_once(ws.path("gaps.jsonl"), {"id": record_id, "from": start, "to": end})
@@ -192,6 +206,8 @@ def ingest(ws: Workspace, events: Sequence[Event], now: datetime) -> IngestResul
                 who = str(sender) if sender is not None else None
                 role = "contact" if route is Route.CONTACT else "admin"
                 append_jsonl_once(thread_path(ws, kind, who), _line(event, role, "in"))
+                if route is Route.CONTACT and sender is not None:
+                    _remember_name(ws, sender, event, now_iso)
             grouped.setdefault((kind, who), []).append(event.id)
             result.items.append(
                 enqueue(ws, WorkItem.new(kind, who, tuple(grouped[(kind, who)]), now))

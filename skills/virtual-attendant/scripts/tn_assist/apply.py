@@ -13,6 +13,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Literal, Union
 
 from tn_assist.config import load_config
@@ -168,7 +169,7 @@ def parse_decision(role: Role, raw: str) -> Decision:
 # --- drafts -----------------------------------------------------------------------------
 
 
-def _drafts_path(ws: Workspace):  # type: ignore[no-untyped-def]
+def _drafts_path(ws: Workspace) -> Path:
     return ws.path("drafts.json")
 
 
@@ -178,7 +179,14 @@ def list_drafts(ws: Workspace) -> list[dict[str, Any]]:
 
 
 def _add_draft(
-    ws: Workspace, contact: str, text: str, event_id: str, message_id: str, now: datetime
+    ws: Workspace,
+    contact: str,
+    text: str,
+    event_id: str,
+    message_id: str,
+    now: datetime,
+    *,
+    blocked: bool = False,
 ) -> Draft:
     data = read_json(_drafts_path(ws), {})
     data = data if isinstance(data, dict) else {}
@@ -192,6 +200,7 @@ def _add_draft(
             "event_id": event_id,
             "to_message_id": message_id,
             "created_at": utc_iso(now),
+            "blocked": blocked,
         }
     )
     write_json_atomic(_drafts_path(ws), {"next": number + 1, "drafts": drafts})
@@ -212,7 +221,7 @@ def pop_draft(ws: Workspace, number: int) -> dict[str, Any] | None:
 # --- escalations ------------------------------------------------------------------------
 
 
-def _escalation_path(ws: Workspace, key: ContactKey):  # type: ignore[no-untyped-def]
+def _escalation_path(ws: Workspace, key: ContactKey) -> Path:
     return ws.path("escalations", f"{key}.json")
 
 
@@ -375,11 +384,13 @@ class _Context:
         lines = [ln for ln in read_lines(self.ws, self.key) if ln.event_id == event_id]
         return event_id, (lines[0].message_id if lines else None) or ""
 
-    def _emit(self, text: str) -> None:
+    def _emit(self, text: str, *, blocked: bool = False) -> None:
         event_id, message_id = self._target()
         action: Action
         if self.mode == "assist":
-            action = _add_draft(self.ws, str(self.key), text, event_id, message_id, self.now)
+            action = _add_draft(
+                self.ws, str(self.key), text, event_id, message_id, self.now, blocked=blocked
+            )
         else:
             action = Reply(str(self.key), message_id, text, event_id)
         self.out.append(self.guard(action) if self.guard else action)
@@ -399,7 +410,7 @@ class _Context:
             self.out += _notices(t("reply_blocked_notice", lang, number=str(self.key), why=why))
             return
         if self.mode == "assist":
-            self._emit(t("blocked_draft", lang, why=why))
+            self._emit(t("blocked_draft", lang, why=why), blocked=True)
         else:
             self._emit(t("handoff_default", lang))
         reason = t("reason_reply_blocked", lang, why=why)
@@ -445,7 +456,7 @@ def apply_contact_decision(
     assert item.contact is not None
     key = ContactKey.parse(item.contact)
     record = load_state(ws, key)
-    if record.state is not ContactState.ACTIVE:
+    if record.state is not ContactState.ACTIVE or load_config(ws).get("paused"):
         return []
     ctx = _Context(ws, key, item, now, mode, guard)
     policy = Policy.load(ws)

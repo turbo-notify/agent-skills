@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Literal, cast
 
 from tn_assist.paths import Workspace
@@ -75,11 +76,11 @@ class WorkItem:
         )
 
 
-def _pending_dir(ws: Workspace):  # type: ignore[no-untyped-def]
+def _pending_dir(ws: Workspace) -> Path:
     return ws.path("queue", "pending")
 
 
-def _leased_dir(ws: Workspace):  # type: ignore[no-untyped-def]
+def _leased_dir(ws: Workspace) -> Path:
     return ws.path("queue", "leased")
 
 

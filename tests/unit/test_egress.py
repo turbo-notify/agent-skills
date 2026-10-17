@@ -121,7 +121,7 @@ def test_unicode_tricks_do_not_hide_another_contacts_number(
     tricks = [
         "+55 11 96666\u20115555",  # non-breaking hyphen
         "55\u00a011\u00a096666\u00a05555",  # non-breaking spaces
-        "\uff15\uff15\uff11\uff11\uff19\uff16\uff16\uff16\uff16\uff15\uff15\uff15\uff15",  # full width
+        "\uff15\uff15\uff11\uff11\uff19\uff16\uff16\uff16\uff16\uff15\uff15\uff15\uff15",  # wide
         "55119666\u200b65555",  # zero width space inside
         "55/11/96666/5555",
         "55_11_96666_5555",
@@ -178,3 +178,22 @@ def test_a_phone_number_dressed_as_money_or_a_date_is_still_found(tmp_path: Path
         "US$ 5511966665555",
     ):
         assert "other_contact" in verdict(ws, text).reasons, text
+
+
+def test_other_unicode_digits_do_not_hide_a_number(tmp_path: Path) -> None:  # security review
+    ws = setup(tmp_path)
+    arabic = "".join(chr(0x0660 + int(d)) for d in f.BRUNO)  # Arabic-Indic digits
+    devanagari = "".join(chr(0x0966 + int(d)) for d in f.BRUNO)
+    for text in (f"Ligue {arabic}", f"Ligue {devanagari}"):
+        assert "other_contact" in verdict(ws, text).reasons, text
+
+
+def test_long_numbers_cannot_hide_inside_money_or_a_date(tmp_path: Path) -> None:  # security review
+    ws = setup(tmp_path)
+    for text in (
+        "CPF R$ 12345678909",  # 11 digits after a currency symbol
+        "US$ 4111 1111 1111 1111",
+        "so 31/12/12345678909 hoje",
+    ):
+        assert not verdict(ws, text).ok, text
+    assert verdict(ws, "Total R$ 1.234,56 em 31/12/2026").ok

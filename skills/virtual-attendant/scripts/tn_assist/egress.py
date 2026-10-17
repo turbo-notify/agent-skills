@@ -18,14 +18,18 @@ from tn_assist.paths import ContactKey, InvalidContactKey, Workspace
 from tn_assist.sources import SourceRegistry
 
 SHINGLE = 5
-_NUMBERISH = re.compile(r"\+?\d(?:[\d\s().\-/,_\u00b7\u2022:]{6,}\d)")
+_NUMBERISH = re.compile(r"\+?[0-9](?:[0-9\s().\-/,_\u00b7\u2022:]{6,}[0-9])")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 _CREDENTIAL = re.compile(r"tn_(?:live|oat|oup|ort)_[A-Za-z0-9_-]{8,}", re.IGNORECASE)
 _WORD = re.compile(r"\w+", re.UNICODE)
-_DATE = re.compile(r"\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b")
-_MONEY = re.compile(
-    r"(?:R\$|US\$|\$|\u20ac|EUR|USD|BRL)\s?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?", re.IGNORECASE
+_DATE = re.compile(
+    r"(?<![0-9])(?:0?[1-9]|[12][0-9]|3[01])[/.\-](?:0?[1-9]|1[0-2])[/.\-](?:[0-9]{4}|[0-9]{2})(?![0-9])"
 )
+_MONEY = re.compile(
+    r"(?:R\$|US\$|\$|\u20ac|EUR|USD|BRL)\s?[0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?(?![0-9])",
+    re.IGNORECASE,
+)
+MAX_MONEY_DIGITS = 9
 
 
 @dataclass(frozen=True)
@@ -42,7 +46,9 @@ def _normalize(text: str) -> str:
         category = unicodedata.category(ch)
         if category == "Cf":
             continue
-        if category == "Pd" or ch in "\u2212\u2011\u2010":
+        if category == "Nd":
+            out.append(str(unicodedata.digit(ch)))
+        elif category == "Pd" or ch in "\u2212\u2011\u2010":
             out.append("-")
         elif category in ("Zs", "Zl", "Zp") or ch in "\t\r\n":
             out.append(" ")
@@ -68,10 +74,22 @@ def _shingles(text: str) -> set[tuple[str, ...]]:
 def _digit_runs(text: str) -> list[str]:
     runs = []
     for match in _NUMBERISH.finditer(text):
-        digits = re.sub(r"\D", "", match.group(0))
+        digits = re.sub(r"[^0-9]", "", match.group(0))
         if 8 <= len(digits) <= 19:
             runs.append(digits)
     return runs
+
+
+def _mask_dates_and_money(text: str) -> str:
+    """Hide what is plainly a date or a price from the "unknown number" rule. A match with too
+    many digits to be a price is left in place, so a long number cannot hide inside a currency."""
+    text = _DATE.sub(" ", text)
+
+    def money(match: re.Match[str]) -> str:
+        digits = re.sub(r"[^0-9]", "", match.group(0))
+        return " " if len(digits) <= MAX_MONEY_DIGITS else match.group(0)
+
+    return _MONEY.sub(money, text)
 
 
 def _same_person(digits: str, number: str) -> bool:
@@ -145,21 +163,25 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
 
     # Dates and amounts of money are not phone numbers, but only for the "unknown number" rule:
     # another contact's number is looked for in the whole text, however it is dressed.
-    plain_runs = set(_digit_runs(_MONEY.sub(" ", _DATE.sub(" ", text))))
+    def is_allowed(canonical: str) -> bool:
+        return canonical in allowed_digits or any(
+            _same_person(canonical, a) for a in allowed_digits
+        )
+
     for digits in _digit_runs(text):
         canonical = _canonical(digits)
-        if canonical in allowed_digits or any(_same_person(canonical, a) for a in allowed_digits):
-            continue
-        if any(_same_person(canonical, n) for n in others):
+        if not is_allowed(canonical) and any(_same_person(canonical, n) for n in others):
             reasons.add("other_contact")
-        elif digits in plain_runs:
+    for digits in _digit_runs(_mask_dates_and_money(text)):
+        canonical = _canonical(digits)
+        if not is_allowed(canonical) and not any(_same_person(canonical, n) for n in others):
             reasons.add("personal_data")
-    only_digits = re.sub(r"\D", "", text)
+    only_digits = re.sub(r"[^0-9]", "", text)
     for number in others:
         if (
             len(number) >= 10
             and number in only_digits
-            and number not in re.sub(r"\D", "", own_text + public_text)
+            and number not in re.sub(r"[^0-9]", "", own_text + public_text)
         ):
             reasons.add("other_contact")
     for mail in _EMAIL.findall(text):
