@@ -264,6 +264,10 @@ def _execute(
     ws = cfg.workspace
     refused = 0
     for op in outbox_pending(ws):
+        if not op.get("to") or not op.get("text"):
+            outbox_done(ws, op)  # a delivery written by an older version: nothing sensible to send
+            _log(ws, "delivery_discarded", reason="old_format")
+            continue
         hold = op.get("not_before")
         if hold and parse_iso(hold) > now:
             continue
@@ -294,6 +298,12 @@ def _execute(
                         )
                         _log(ws, "delivery_held", status=error.status, code=error.code, kind=kind)
                     break
+                if kind == "drop" and op.get("quote"):
+                    # a quote the API cannot use must not cost the customer their answer
+                    op = {**op, "quote": None}
+                    outbox_update(ws, op, quote=None)
+                    _log(ws, "quote_dropped", status=error.status, code=error.code)
+                    continue
                 outbox_done(ws, op)
                 _log(ws, "delivery_refused", status=error.status, code=error.code)
                 if kind == "quota":

@@ -22,6 +22,7 @@ class FakeApi:
         self.quotes: list[str | None] = []  # the earlier message each customer answer quoted
         self.errors: list[ApiError] = []
         self.reply_error: ApiError | None = None  # every reply fails with this, until cleared
+        self.reject_quote: ApiError | None = None  # a send that carries a quote fails with this
         self.event_calls = 0
 
     def add(self, *raw: dict[str, Any]) -> None:
@@ -51,6 +52,8 @@ class FakeApi:
 
     def send(self, number_ref: str, to: str, text: str, key: str, quote: str | None = None) -> None:
         """A message to one of the people (a notice) or to a customer (an answer)."""
+        if quote and self.reject_quote is not None:
+            raise self.reject_quote
         if to not in PEOPLE:
             if self.reply_error is not None:
                 raise self.reply_error

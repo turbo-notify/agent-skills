@@ -14,6 +14,7 @@ from tests.support.fakes import FakeApi, FakeHarness
 from tests.support.workspace import make_workspace
 from tn_assist.apply import list_drafts
 from tn_assist.config import load_config, save_config
+from tn_assist.deliver import outbox_add
 from tn_assist.paths import ContactKey, Workspace
 from tn_assist.profiles import KEY_ENV, UnsupportedHarness
 from tn_assist.queue import WorkItem, enqueue, lease_next
@@ -465,7 +466,7 @@ def test_a_delivery_that_never_goes_through_is_dropped_after_six_hours(tmp_path:
     for hours in (2, 4, 6, 8):
         cycle(cfg, api, FakeHarness(), T0 + timedelta(hours=hours))
     assert api.replies == []
-    held = [p for p in (ws.root / "outbox").glob("*.json") if '"op": "reply"' in p.read_text()]
+    held = [p for p in (ws.root / "outbox").glob("*.json") if '"op": "send"' in p.read_text()]
     assert held == []  # past six hours the reply is dropped, not retried for ever
 
 
@@ -482,3 +483,46 @@ def test_other_client_errors_are_dropped_without_a_notice(tmp_path: Path) -> Non
     cycle(cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1))
     assert api.replies == [] and api.sends == []
     assert not list((ws.root / "outbox").glob("*.json"))
+
+
+def test_a_quote_the_api_refuses_does_not_cost_the_customer_their_answer(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    outbox_add(
+        ws,
+        [
+            {
+                "op": "send",
+                "to": f.ANA,
+                "text": "Para Salvador, 3 dias.",
+                "idempotency_key": "k-quote",
+                "contact": f.ANA,
+                "quote": "msg_" + "e" * 32,
+            }
+        ],
+        now=T0,
+    )
+    api.reject_quote = ApiError(422, "message_not_replyable")
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=1))
+    assert [(r[1], r[2], r[3]) for r in api.replies] == [
+        (f.ANA, "Para Salvador, 3 dias.", "k-quote")
+    ]
+    assert api.quotes == [None]  # sent again as a plain message
+
+
+def test_a_delivery_left_by_an_older_version_is_discarded_not_fatal(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    outbox_add(
+        ws,
+        [
+            {
+                "op": "reply",
+                "message_id": "msg_1",
+                "text": "x",
+                "idempotency_key": "k-old",
+                "contact": f.ANA,
+            }
+        ],
+        now=T0,
+    )
+    cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=1))
+    assert api.replies == [] and list((ws.root / "outbox").glob("*.json")) == []

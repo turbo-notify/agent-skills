@@ -155,6 +155,8 @@ def parse_decision(role: Role, raw: str) -> Decision:
         key, value = entry["key"], entry["value"]
         if not isinstance(key, str) or not _FACT_KEY.match(key) or not isinstance(value, str):
             raise InvalidDecision("bad fact")
+        if key.startswith("note_"):
+            continue  # notes are the team's: a customer's words must not pose as one
         facts.append(DecisionFact(key, clean_fact_value(value)))
     escalation = None
     if data.get("escalate") is not None:
@@ -204,6 +206,8 @@ def parse_compaction(raw: str) -> Compaction:
         key, value = entry["key"], entry["value"]
         if not isinstance(key, str) or not _FACT_KEY.match(key) or not isinstance(value, str):
             raise InvalidDecision("bad fact")
+        if key.startswith("note_"):
+            continue
         facts.append(DecisionFact(key, clean_fact_value(value)))
     cleaned = clean_summary(summary)
     if not cleaned:
