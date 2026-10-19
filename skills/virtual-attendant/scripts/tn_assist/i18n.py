@@ -86,6 +86,10 @@ STRINGS: dict[str, dict[str, str]] = {
             "They will reply as soon as they can."
         ),
     },
+    "ai_disclosure": {
+        "pt": "Sou o assistente virtual deste negócio, uma inteligência artificial.",
+        "en": "I am this business's virtual assistant, an AI.",
+    },
     "dnc_default": {
         "pt": "Tudo bem, não vou mais enviar mensagens por aqui.",
         "en": "Okay, I will not send you more messages here.",

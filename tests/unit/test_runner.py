@@ -99,7 +99,10 @@ def test_a_new_message_starts_one_fresh_process_per_customer_and_replies_after_t
     for child in harness.children:
         message = child.stdin.split("## New message")[1]
         assert ("plano anual" in message) != ("Salvador" in message)  # one customer per process
-    assert {r[2] for r in api.replies} == {"Custa R$ 490.", "Sim, entregamos."}
+    assert {r[2] for r in api.replies} == {
+        f.disclosed("Custa R$ 490."),
+        f.disclosed("Sim, entregamos."),
+    }
     assert {r[3] for r in api.replies} == {ana["id"], bruno["id"]}  # idempotency key = event id
 
 
@@ -217,7 +220,7 @@ def test_an_item_left_leased_by_a_killed_runner_comes_back(tmp_path: Path) -> No
     assert leased is not None  # the "killed" runner took it and never finished
     harness = FakeHarness('{"reply": "Olá!"}')
     report = cycle(cfg, api, harness, T0 + timedelta(minutes=20))
-    assert report.processed == 1 and [r[2] for r in api.replies] == ["Olá!"]
+    assert report.processed == 1 and [r[2] for r in api.replies] == [f.disclosed("Olá!")]
 
 
 def test_other_harnesses_are_refused_up_front(tmp_path: Path) -> None:
@@ -251,7 +254,7 @@ def test_a_garbled_answer_is_retried_not_sent(tmp_path: Path) -> None:
     cycle(cfg, api, harness, T0 + timedelta(minutes=1))
     assert api.replies == []
     cycle(cfg, api, harness, T0 + timedelta(minutes=2))
-    assert [r[2] for r in api.replies] == ["Olá!"]
+    assert [r[2] for r in api.replies] == [f.disclosed("Olá!")]
 
 
 def test_a_transient_delivery_failure_is_retried_with_the_same_key(tmp_path: Path) -> None:
@@ -265,7 +268,7 @@ def test_a_transient_delivery_failure_is_retried_with_the_same_key(tmp_path: Pat
     cycle(cfg, api, harness, T0 + timedelta(minutes=2))
     assert api.replies == []  # held back for a while, not hammered
     cycle(cfg, api, harness, T0 + timedelta(minutes=8))
-    assert [(r[2], r[3]) for r in api.replies] == [("Olá!", e["id"])]
+    assert [(r[2], r[3]) for r in api.replies] == [(f.disclosed("Olá!"), e["id"])]
 
 
 def test_a_quota_refusal_is_dropped_and_reported_once(tmp_path: Path) -> None:
@@ -430,7 +433,7 @@ def test_a_pacing_refusal_waits_for_retry_after_and_goes_through_in_the_same_cyc
         cfg, api, FakeHarness('{"reply": "Olá!"}'), T0 + timedelta(minutes=1), sleep=slept.append
     )
     assert slept == [pytest.approx(1.3)] and report.sent == 1
-    assert [r[2] for r in api.replies] == ["Olá!"]
+    assert [r[2] for r in api.replies] == [f.disclosed("Olá!")]
     assert (
         json.loads((ws.root / "stats.json").read_text())
         if (ws.root / "stats.json").exists()
@@ -448,7 +451,7 @@ def test_pacing_that_does_not_clear_is_held_not_reported_as_a_quota_problem(tmp_
         "send_rate_spacing" in s[2] for s in api.sends
     )  # nobody is told it is a quota issue
     cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=8), sleep=slept.append)
-    assert [r[2] for r in api.replies] == ["Olá!"]
+    assert [r[2] for r in api.replies] == [f.disclosed("Olá!")]
 
 
 def test_a_daily_limit_holds_the_delivery_for_the_hour_or_the_retry_after(tmp_path: Path) -> None:
@@ -458,7 +461,7 @@ def test_a_daily_limit_holds_the_delivery_for_the_hour_or_the_retry_after(tmp_pa
     cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=90))
     assert api.replies == []
     cycle(cfg, api, FakeHarness(), T0 + timedelta(hours=3))
-    assert [r[2] for r in api.replies] == ["Olá!"]
+    assert [r[2] for r in api.replies] == [f.disclosed("Olá!")]
 
 
 def test_a_delivery_that_never_goes_through_is_dropped_after_six_hours(tmp_path: Path) -> None:
@@ -553,7 +556,7 @@ def test_a_refused_key_or_a_reconnecting_number_holds_the_answer(tmp_path: Path)
     assert api.replies == []
     assert len(list((ws.root / "outbox").glob("*.json"))) >= 1  # still there, not erased
     cycle(cfg, api, FakeHarness(), T0 + timedelta(minutes=10))
-    assert [r[2] for r in api.replies] == ["Olá!"]
+    assert [r[2] for r in api.replies] == [f.disclosed("Olá!")]
     assert any("not_authenticated" in s[2] for s in api.sends)  # the people were told, once
 
 
@@ -601,7 +604,7 @@ def test_a_failing_text_fetch_retries_the_item_and_never_stores_a_missing_text(
     first = cycle(cfg, api, harness, T0 + timedelta(minutes=1))
     assert first.failed == 1 and api.replies == []
     cycle(cfg, api, harness, T0 + timedelta(minutes=5))
-    assert [r[2] for r in api.replies] == ["Custa R$ 490."]
+    assert [r[2] for r in api.replies] == [f.disclosed("Custa R$ 490.")]
     assert "Texto completo" in harness.children[-1].stdin  # the full text, not the preview
 
 
@@ -616,7 +619,7 @@ def test_the_first_message_on_an_account_with_no_events_is_not_skipped(tmp_path:
     api.add(f.inbound_text(preview="oi", created_at="2026-10-17T12:01:00Z"))
     harness = FakeHarness('{"reply": "Olá!"}')
     cycle(cfg, api, harness, T0 + timedelta(minutes=1))
-    assert [r[2] for r in api.replies] == ["Olá!"]
+    assert [r[2] for r in api.replies] == [f.disclosed("Olá!")]
 
 
 def test_console_answers_survive_a_failing_model_step(tmp_path: Path) -> None:

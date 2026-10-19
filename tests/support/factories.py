@@ -5,6 +5,8 @@ from __future__ import annotations
 import itertools
 from typing import Any
 
+from tn_assist.i18n import t
+
 ORG = "org_" + "a" * 32
 NUM = "num_" + "b" * 32
 OTHER_NUM = "num_" + "c" * 32
@@ -128,3 +130,8 @@ def tn_outbound(**kw: Any) -> dict[str, Any]:
 def payload(*events: dict[str, Any], has_more: bool = False) -> dict[str, Any]:
     """An API page: newest first, as `GET /v1/events` returns it."""
     return {"object": "list", "data": list(events), "has_more": has_more}
+
+
+def disclosed(text: str, lang: str = "pt") -> str:
+    """What a customer reads when the answer opens a chat: the AI notice, then the answer."""
+    return f"{t('ai_disclosure', lang)}\n\n{text}"  # type: ignore[arg-type]

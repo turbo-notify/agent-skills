@@ -1,6 +1,6 @@
 {
-  "version": "0.2.4",
-  "released": "2026-10-17",
+  "version": "0.3.0",
+  "released": "2026-10-19",
   "min_workspace_schema": 1,
   "notes_url": "https://github.com/turbo-notify/agent-skills/blob/main/CHANGELOG.md"
 }

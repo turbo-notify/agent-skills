@@ -44,6 +44,14 @@ with the command for the agent in use.
 - One network address besides Turbo Notify: `raw.githubusercontent.com/turbo-notify/agent-skills/main/latest.json`, read about once an hour (and again after 10 minutes if a check fails) for the version check. A failure changes nothing.
 - Your other MCP servers only if you allow each one during setup.
 
+## What it runs and what it sends
+
+- It runs the `tn_assist` helper with `python3`. The helper uses only the standard library and installs nothing.
+- In the unattended runner (Claude Code and Codex), it starts your own `claude` or `codex` command once per customer, in a separate process with no tools, to write that customer's answer. The process gets that customer's messages, their file and the business knowledge, and nothing else.
+- The text of a customer's message goes to the model of the agent you use, under your account with that agent. It goes nowhere else.
+- Answers go out through the Turbo Notify API with your API key, to the customer who wrote. A check before every send stops another customer's number or name, non-public text and credentials.
+- The first answer of each chat tells the customer that it comes from an AI. The line is added by the helper, not by the model.
+
 ## Layout
 
 ```

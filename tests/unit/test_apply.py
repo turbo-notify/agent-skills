@@ -56,7 +56,7 @@ def test_normal_reply_becomes_a_reply_with_idempotency_key(tmp_path: Path) -> No
     actions = apply_contact_decision(ws, item, decide(reply="Custa R$ 49."), T0, mode="auto")
     (reply,) = actions
     assert isinstance(reply, Reply)
-    assert reply.idempotency_key == e["id"] and reply.text == "Custa R$ 49."
+    assert reply.idempotency_key == e["id"] and reply.text == f.disclosed("Custa R$ 49.")
     assert reply.quote_message_id is None  # the new message is answered with a normal message
 
 
@@ -67,7 +67,7 @@ def test_assist_mode_emits_drafts_not_replies(tmp_path: Path) -> None:  # AC28
     assert kinds(actions) == ["Draft"]
     assert isinstance(actions[0], Draft) and actions[0].number == 1
     drafts = json.loads(ws.path("drafts.json").read_text())
-    assert drafts["drafts"][0]["text"] == "Custa R$ 49."
+    assert drafts["drafts"][0]["text"] == f.disclosed("Custa R$ 49.")
 
 
 def test_facts_and_language_are_stored(tmp_path: Path) -> None:
@@ -415,12 +415,13 @@ def test_what_the_assistant_said_is_kept_in_the_transcript(
     lines = read_lines(ws, ANA)
     assert [(ln.role, ln.text) for ln in lines] == [
         ("contact", "quanto custa?"),
-        ("assistant", "Custa R$ 490."),
+        ("assistant", f.disclosed("Custa R$ 490.")),
     ]
     item2, _ = arrive(ws, "e o mensal?", at=T0 + timedelta(minutes=2))
     from tn_assist.pack import build_pack
 
-    assert "assistant: Custa R$ 490." in build_pack(ws, item2, now=T0).text
+    pack = build_pack(ws, item2, now=T0).text
+    assert "Custa R$ 490." in pack and "assistant:" in pack
 
 
 def test_a_draft_is_not_in_the_transcript_until_it_is_sent(tmp_path: Path) -> None:
@@ -551,3 +552,78 @@ def test_an_administrators_pause_after_a_takeover_is_never_handed_back(
     assert load_state(ws, ANA).human_takeover  # the flag survives the pause
     assert due_auto_resumes(ws, T0) == []
     assert load_state(ws, ANA).state is ContactState.PAUSED
+
+
+# --- the customer is told, once per chat, that the answer comes from an AI ----------------------
+
+
+def reply_texts(actions) -> list[str]:  # type: ignore[no-untyped-def]
+    return [a.text for a in actions if isinstance(a, Reply)]
+
+
+def test_the_first_answer_of_a_chat_says_it_comes_from_an_ai(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws)
+    actions = apply_contact_decision(ws, item, decide(reply="Custa R$ 49."), T0, mode="auto")
+    assert reply_texts(actions) == [f.disclosed("Custa R$ 49.")]
+
+
+def test_the_model_cannot_leave_the_notice_out_or_dodge_it_by_wording(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws)
+    actions = apply_contact_decision(
+        ws, item, decide(reply="Sou uma pessoa da equipe, pode falar."), T0, mode="auto"
+    )
+    assert reply_texts(actions)[0].startswith(f.disclosed("")[:-2])
+
+
+def test_the_notice_follows_the_language_of_the_customer(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws, "how much?")
+    actions = apply_contact_decision(
+        ws, item, decide(reply="It costs 49.", language="en"), T0, mode="auto"
+    )
+    assert reply_texts(actions) == [f.disclosed("It costs 49.", "en")]
+
+
+def test_a_second_answer_in_the_same_chat_does_not_repeat_it(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws)
+    apply_contact_decision(ws, item, decide(reply="Custa R$ 49."), T0, mode="auto")
+    item2, _ = arrive(ws, "e o mensal?", at=T0 + timedelta(hours=3))
+    actions = apply_contact_decision(
+        ws, item2, decide(reply="R$ 9."), T0 + timedelta(hours=3), mode="auto"
+    )
+    assert reply_texts(actions) == ["R$ 9."]
+
+
+def test_a_new_chat_after_a_day_says_it_again(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws)
+    apply_contact_decision(ws, item, decide(reply="Custa R$ 49."), T0, mode="auto")
+    later = T0 + timedelta(hours=25)
+    item2, _ = arrive(ws, "oi de novo", at=later)
+    actions = apply_contact_decision(ws, item2, decide(reply="Olá!"), later, mode="auto")
+    assert reply_texts(actions) == [f.disclosed("Olá!")]
+
+
+def test_the_hand_off_message_opens_the_chat_too(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws, "quero falar com alguém")
+    actions = apply_contact_decision(
+        ws,
+        item,
+        decide(escalate={"reason": "asked", "summary": "quer pessoa", "urgency": "normal"}),
+        T0,
+        mode="auto",
+    )
+    assert reply_texts(actions)[0].startswith(f.disclosed("")[:-2])
+
+
+def test_an_opt_out_confirmation_is_not_a_conversation_to_introduce_ourselves_in(
+    tmp_path: Path,
+) -> None:
+    ws = make_workspace(tmp_path)
+    item, _ = arrive(ws, "pare de me escrever")
+    actions = apply_contact_decision(ws, item, decide(state="do_not_contact"), T0, mode="auto")
+    assert reply_texts(actions) == ["Tudo bem, não vou mais enviar mensagens por aqui."]

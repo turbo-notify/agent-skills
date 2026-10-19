@@ -181,7 +181,11 @@ def test_send_draft_as_written(tmp_path: Path) -> None:
     draft = _draft(ws)
     result = run(ws, f"/enviar {draft.number}", role="attendant", actor="self")
     (reply,) = result.actions
-    assert isinstance(reply, Reply) and reply.text == "Custa R$ 490." and reply.contact == f.ANA
+    assert (
+        isinstance(reply, Reply)
+        and reply.text == f.disclosed("Custa R$ 490.")
+        and reply.contact == f.ANA
+    )
     assert list_drafts(ws) == []
 
 

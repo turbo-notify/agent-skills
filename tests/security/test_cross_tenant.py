@@ -88,7 +88,7 @@ def test_two_organizations_running_together_stay_apart(tmp_path: Path) -> None:
         ("BETA", b, MARK_A, KEY_B, KEY_A, (ORG_A, NUM_A)),
     ):
         ws, cfg, api = world
-        assert [r[2] for r in api.replies] == [f"Bem-vindo à {own}!"]
+        assert [r[2] for r in api.replies] == [f.disclosed(f"Bem-vindo à {own}!")]
         assert all(r[0] == ws.num_id for r in api.replies + api.sends)  # only its own number
         for child in harnesses[own].children:
             assert foreign_marker not in child.stdin and foreign_key not in str(child.env)

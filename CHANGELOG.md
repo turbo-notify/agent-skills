@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+- The first answer of each chat now says it comes from an AI, in the customer's language (Portuguese or English). Trusted code adds one line before the answer, so a decision cannot leave it out. A chat is a stretch of conversation: the line comes back after a day without an answer from the assistant. The confirmation of an opt-out does not carry it.
+
 ## 0.2.4
 
 - Docs and update notice: the Claude Desktop and Cowork steps now use the real menu names (Customize, Plugins, Add, Add marketplace, Add from a repository, then Discover and Add) and no longer mention an update button that Claude does not document.

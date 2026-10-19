@@ -181,7 +181,7 @@ def test_auto_mode_replies_directly(tmp_path: Path) -> None:
         {
             "op": "send",
             "to": f.ANA,
-            "text": "Olá!",
+            "text": f.disclosed("Olá!"),
             "idempotency_key": event["id"],
             "contact": f.ANA,
             "quote": None,

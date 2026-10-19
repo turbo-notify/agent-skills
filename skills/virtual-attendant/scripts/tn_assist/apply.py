@@ -47,6 +47,9 @@ _URGENCY = ("low", "normal", "high")
 LOOP_MIN_CHARS = 12
 LOOP_SIMILARITY = 0.95
 LOOP_WINDOW = timedelta(minutes=10)
+#: A chat is a stretch of conversation. After this long without an answer from the assistant, the
+#: next answer opens a new chat and says again that it comes from an AI.
+CHAT_WINDOW = timedelta(hours=24)
 
 
 class InvalidDecision(ValueError):
@@ -527,8 +530,29 @@ class _Context:
             return None
         return self.quote if any(ln.message_id == self.quote for ln in lines) else None
 
-    def _emit(self, text: str, *, blocked: bool = False) -> None:
+    def _opens_a_chat(self) -> bool:
+        """True when the assistant has not answered this customer within the chat window."""
+        cutoff = self.now - CHAT_WINDOW
+        return not any(
+            ln.role == "assistant" and parse_iso(ln.at) >= cutoff
+            for ln in read_lines(self.ws, self.key)
+            if ln.at
+        )
+
+    def _with_disclosure(self, text: str) -> str:
+        """The customer is told, in the first answer of each chat, that it comes from an AI.
+
+        Trusted code adds it, never the model: a decision cannot leave it out, and the egress
+        check has already passed the text it precedes.
+        """
+        lang = load_state(self.ws, self.key).language or ""
+        notice = t("ai_disclosure", "en" if lang.lower().startswith("en") else _lang(self.ws))
+        return f"{notice}\n\n{text}"
+
+    def _emit(self, text: str, *, blocked: bool = False, disclose: bool = True) -> None:
         event_id = self._event_id()
+        if disclose and not blocked and self._opens_a_chat():
+            text = self._with_disclosure(text)
         quote_id = self._quote_target()
         action: Action
         if self.mode == "assist":
@@ -548,11 +572,11 @@ class _Context:
             )
         self.out.append(self.guard(action) if self.guard else action)
 
-    def say(self, text: str) -> None:
+    def say(self, text: str, *, disclose: bool = True) -> None:
         """Queue a message to the customer, after the egress guard. Nothing skips this check."""
         verdict = check_egress(self.ws, text, contact=self.key)
         if verdict.ok:
-            self._emit(text)
+            self._emit(text, disclose=disclose)
             return
         self.blocked = True
         lang = _lang(self.ws)
@@ -641,7 +665,8 @@ def apply_contact_decision(
         )
         drop_drafts_for(ws, str(key))  # nothing prepared before the opt-out may go out afterwards
         drop_outbox_for(ws, str(key))  # nor a reply that was queued but not yet delivered
-        ctx.say(decision.reply or t("dnc_default", lang))
+        # the customer asked for silence: a confirmation, not a chat to introduce ourselves in
+        ctx.say(decision.reply or t("dnc_default", lang), disclose=False)
         if not ctx.blocked:
             _remember(ws, key, decision, now)
         return ctx.out
