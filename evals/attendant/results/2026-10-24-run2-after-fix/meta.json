@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-24",
+  "started": "2026-10-24T08:38:04",
+  "harness": "claude-code",
+  "role": "contact",
+  "model_requested": null,
+  "model_used": [
+    "claude-opus-5-5"
+  ],
+  "cli": "2.1.310 (Claude Code)",
+  "helper_version": "0.3.0",
+  "timeout_s": 240.0,
+  "attempts": 3,
+  "set": "all",
+  "label": "run2-after-fix",
+  "instructions": "the contact contract with the no-derivation rules (totals, dates and weekdays, conclusions from absence)",
+  "scored_with": "the final checker, rescored from the stored replies (no model call)"
+}

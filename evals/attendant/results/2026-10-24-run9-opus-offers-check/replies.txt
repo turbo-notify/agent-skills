@@ -1,0 +1,39 @@
+offer-pt-thumb [ok] owed: an answer or a hand-off
+  customer: 👍
+  sent:     Combinado! Vou pedir para alguém da equipe continuar a conversa e te responder sobre o abajur infantil. 😊
+
+offer-pt-ok [ok] owed: an answer or a hand-off
+  customer: ok
+  sent:     Combinado! Já pedi para alguém da equipe continuar a conversa e te ajudar com o abajur infantil. Em breve uma pessoa vai te responder por aqui.
+
+offer-pt-sim [ok] owed: an answer or a hand-off
+  customer: sim
+  sent:     Combinado! Já pedi para alguém da equipe continuar a conversa e te ajudar com o abajur infantil. Em breve uma pessoa vai te responder por aqui.
+
+offer-pt-pode-ser [ok] owed: an answer or a hand-off
+  customer: pode ser
+  sent:     Combinado! Vou pedir para alguém da nossa equipe continuar a conversa e te ajudar com o abajur infantil.
+
+offer-en-ok [ok] owed: an answer or a hand-off
+  customer: ok
+  sent:     Great! Someone from our team will continue the conversation here to help you with kids' lamps.
+
+offer-en-thumb [ok] owed: an answer or a hand-off
+  customer: 👍
+  sent:     Great! Someone from our team will follow up with you here about kids' lamps.
+
+else-pt-ok [ok] owed: silence
+  customer: ok
+  sent:     (nothing: handled in silence)
+
+else-pt-thumb [ok] owed: silence
+  customer: 👍
+  sent:     (nothing: handled in silence)
+
+else-pt-obrigado [ok] owed: silence
+  customer: obrigado
+  sent:     (nothing: handled in silence)
+
+else-en-thanks [ok] owed: silence
+  customer: thanks
+  sent:     (nothing: handled in silence)

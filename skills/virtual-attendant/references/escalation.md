@@ -2,12 +2,16 @@
 
 ## When the assistant escalates
 
-The knowledge does not answer (price, stock, deadline, promise, policy), the customer asks for a person, is upset, asks something outside the business, brings up payment, refund or legal matters, two turns in a row make no progress, or a file cannot be read. The decision carries `escalate`; the helper does the rest:
+The knowledge does not answer a question about a price, stock, a deadline, a promise, a commitment or a policy, the customer asks for a person, is upset or hostile, asks something outside the business, brings up a payment problem, a refund or exchange, a complaint or a legal matter (or asks the assistant to promise or confirm something in writing), two replies in a row did not get the customer closer to what they need, or the message is a file with no text that cannot be read. The decision carries `escalate`; the helper does the rest:
 
 - the customer gets one message saying a person will continue (in their language, from the decision or a default);
 - the assistant stops answering that customer (state `handoff`);
 - the administrators and the number's chat with itself receive one notice with the reason, a short summary and the last message;
 - after four hours without action, one reminder.
+
+## When it says nothing
+
+A customer whose new message only closes the conversation (a thank you, an "ok", a thumbs up) is not answered and is not handed to a person: the assistant stays active for their next message. The decision carries `no_reply_needed` for that, and the helper checks the customer's words before it agrees ([contact-turn.md](contact-turn.md)). A `reply` of null without the flag still hands the customer over, and so does the flag on a message that is more than a thanks.
 
 ## Takeover by the phone
 

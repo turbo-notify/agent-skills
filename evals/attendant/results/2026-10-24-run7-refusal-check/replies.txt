@@ -1,0 +1,11 @@
+refused-once [ok] answers cut: 1
+  customer: Oi! Vocês abrem no sábado?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Oi, Marina! Sim, abrimos no sábado, das 9h às 13h. 😊 O atendimento pelo WhatsApp segue o mesmo horário.
+
+refused-twice-en [ok] answers cut: 2
+  customer: Hi! What time do you open on Saturday?
+  sent:     I am this business's virtual assistant, an AI. I will ask someone on the team to continue this conversation with you. They will reply as soon as they can.
+
+refused-twice-pt [ok] answers cut: 2
+  customer: Boa tarde, qual o prazo de troca?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Vou pedir para uma pessoa da equipe continuar essa conversa com você. Ela responde assim que puder.

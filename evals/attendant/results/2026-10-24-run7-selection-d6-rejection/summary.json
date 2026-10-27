@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-24",
+  "started": "2026-10-24T10:19:16",
+  "harness": "claude-code",
+  "role": "contact",
+  "model_requested": null,
+  "model_used": [
+    "claude-opus-5-5"
+  ],
+  "cli": "2.1.310 (Claude Code)",
+  "helper_version": "0.3.0",
+  "timeout_s": 240.0,
+  "attempts": 3,
+  "set": "all",
+  "refused_answers": {
+    "total": 0,
+    "handed_over": 0
+  },
+  "no_invention": {
+    "total": 40,
+    "verdicts": {
+      "borderline": 9,
+      "clean": 31
+    },
+    "final": {
+      "pass": 40,
+      "fail": 0,
+      "pending": 0
+    },
+    "handed_to_a_person": 39,
+    "egress_blocked": 0,
+    "model_violations_stopped_by_guard": 0,
+    "invalid_outputs": 0
+  },
+  "controls": {
+    "total": 11,
+    "verdicts": {
+      "borderline": 2,
+      "clean": 9
+    },
+    "final": {
+      "pass": 11,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "refusal": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "offers": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "language": {
+    "total": 20,
+    "verdicts": {
+      "ok": 20
+    },
+    "final": {
+      "pass": 20,
+      "fail": 0,
+      "pending": 0
+    },
+    "scenarios": [
+      "en-pt-en",
+      "fixed-en",
+      "fixed-pt",
+      "pt-en-pt"
+    ],
+    "ambiguous": {
+      "total": 1,
+      "verdicts": {
+        "ok": 1
+      },
+      "final": {
+        "pass": 1,
+        "fail": 0,
+        "pending": 0
+      }
+    }
+  },
+  "closing": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "seconds_per_call": 14.5
+}

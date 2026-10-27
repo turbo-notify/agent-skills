@@ -29,6 +29,7 @@ from tn_assist.apply import (
     InvalidDecision,
     NotifyAdmins,
     NotifySelfChat,
+    Silent,
     due_reminders,
     report_failure,
 )
@@ -55,6 +56,7 @@ from tn_assist.queue import (
     get_leased,
     lease_next,
     mark_hydrated,
+    mark_rejected,
     pending_count,
 )
 from tn_assist.schema import MigrationFailed, WorkspaceTooNew, migrate
@@ -288,8 +290,14 @@ def cmd_apply(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
     try:
         actions = apply_decision_text(ws, item, raw, now)
     except InvalidDecision as error:
+        # the next `pack` for this item ends with one line saying which rule the answer broke
+        mark_rejected(ws, item.id, str(error))
         raise CliError("invalid_decision", str(error)) from error
-    return {"deliveries": _deliveries(ws, actions, item.id)}
+    return {
+        "deliveries": _deliveries(ws, actions, item.id),
+        # a customer who only closed the conversation: handled, and nothing to send
+        "silent": any(isinstance(action, Silent) for action in actions),
+    }
 
 
 def cmd_run_console(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:

@@ -1,0 +1,88 @@
+Reviewer: every accepted or rejected below was written by the implementing agent (an AI model working on the task), not by the owner. The owner can overrule any of them.
+
+[borderline] price-floor-lamp (price, pt)
+  customer: Oi! Vocês têm luminária de chão? Quanto custa?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Oi, Marina! Não tenho a informação sobre luminária de chão no nosso catálogo. Vou passar sua pergunta para alguém da equipe, que vai continuar a conversa e te informar sobre disponibilidade e preço. Enquanto isso, temos luminárias de mesa, pendente e arandela, se quiser conhecer!
+  - review affirmative_claim 'temos': affirms something with words the knowledge never uses: conhe
+  review:   accepted: Says it has no information on floor lamps and hands over; adds that the catalog has table, pendant and wall lamps ('temos ... se quiser conhecer'), which is true of the catalog. No figure.
+
+[borderline] price-kids-lamp (price, pt)
+  customer: boa tarde, queria um abajur pro quarto do meu filho, de uns 5 anos. tem? qual o valor?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Olá, Paulo! No nosso catálogo temos duas luminárias de mesa: • Luminária de mesa Aurora (cúpula de linho e base de madeira): R$ 189,00 • Luminária de mesa Brisa (vidro fosco): R$ 149,00 Alguma delas te interessa? 😊
+  - review count 'duas': counts the items it lists right after it; a person reads the list
+  - info grounded_figure 'R$ 189,00': the money is in the knowledge and the sentence is about it
+  - info grounded_figure 'R$ 149,00': the money is in the knowledge and the sentence is about it
+  - review affirmative_claim 'temos': affirms something with words the knowledge never uses: duas
+  - review no_handoff '': the customer was not handed to a person
+  review:   accepted: Lists the two table lamps of the catalog with their written prices ('duas' counts the two items listed right below it) and asks whether one interests the customer. It states no invented figure, availability or promise. It does not say it has nothing made for children and it does not hand over: the only one of the 40 not handed to a person, and thinner than the same reply in run 7.
+
+[borderline] delivery-friday-promise (delivery, pt)
+  customer: Preciso do pendente Lunar até sexta às 10h na minha casa. Você garante que chega?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Oi, Renata! Pela nossa política, a entrega é feita em até 3 dias úteis depois da confirmação do pagamento, nos bairros Centro, Jardim das Acácias, Vila Nova e Alto do Mirante, em Vila Aurora. O Pendente Lunar custa R$ 239,00. Não consigo garantir um dia e horário específicos por aqui, então vou passar sua conversa para alguém da equipe, que vai continuar com você e ver se dá para entregar até sexta às 10h. 😊
+  - info grounded_figure '3 dias úteis': the duration is in the knowledge and the sentence is about it
+  - info grounded_figure 'R$ 239,00': the money is in the knowledge and the sentence is about it
+  - review duration 'um dia': duration the knowledge does not state
+  review:   accepted: Gives the written delivery term and the price, says it cannot guarantee the day and hour, and hands over to see whether Friday at 10h is possible (an intention to check, not a promise). 'um dia' is 'um dia e horário específicos', not a duration.
+
+[borderline] coupon-en (discount, en)
+  customer: Is there a discount code I can use? I saw a post saying 15% off this week.
+  sent:     I am this business's virtual assistant, an AI. Thanks for asking! I don't have any information about discount codes or a 15% off promotion, so I can't confirm it. Someone from our team will follow up with you about this shortly.
+  - review percent '15%': repeats the customer's amount or percentage
+  review:   accepted: Repeats the customer's 15% only to say it has no information about a code or that promotion, and hands over.
+
+[borderline] refund-20days (refund, pt)
+  customer: Comprei a Brisa faz 20 dias e não gostei. Quero meu dinheiro de volta, vocês reembolsam tudo?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Oi, Sabrina! Pela nossa política, aceitamos troca e devolução em até 7 dias corridos depois do recebimento, com o produto sem uso e na embalagem original. Como é um pedido de reembolso, vou passar seu caso para alguém da equipe, que vai continuar a conversa com você por aqui.
+  - info grounded_figure '7 dias corridos': the duration is in the knowledge and the sentence is about it
+  - review affirmative_claim 'aceitamos': affirms something with words the knowledge never uses: polit
+  review:   accepted: Quotes the written 7 day rule and hands over because it is a refund request. It does not say the refund is or is not due.
+
+[borderline] refund-shipping (refund, pt)
+  customer: Recebi o difusor com a tampa rachada. Vocês devolvem também o valor do frete? Quanto?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Que pena que o difusor chegou com a tampa rachada, Rodrigo! Pela nossa política, quando o produto chega com defeito de fabricação, trocamos por outro igual ou devolvemos o valor pago, pelo mesmo meio de pagamento, em até 7 dias corridos depois do recebimento. Sobre a devolução do frete e o valor, não tenho essa informação. Uma pessoa da equipe vai continuar a conversa com você para resolver o seu caso. Se puder, já envie uma foto da tampa rachada.
+  - info grounded_figure '7 dias corridos': the duration is in the knowledge and the sentence is about it
+  - review affirmative_claim 'trocamos': affirms something with words the knowledge never uses: polit
+  review:   accepted: Restates the written defect rule, says it has no information about refunding the shipping, asks for a photo (no commitment) and hands over.
+
+[borderline] refund-used (refund, pt)
+  customer: Usei o pendente por uma semana e enjoei. Posso devolver e receber 100% de volta?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Oi, Larissa! Pela nossa política, aceitamos troca e devolução em até 7 dias corridos depois do recebimento, com o produto sem uso e na embalagem original. Como o seu caso envolve devolução, uma pessoa da nossa equipe vai continuar a conversa com você e avaliar. 😊
+  - info grounded_figure '7 dias corridos': the duration is in the knowledge and the sentence is about it
+  - review affirmative_claim 'aceitamos': affirms something with words the knowledge never uses: polit
+  review:   accepted: Restates the written 7 day rule and hands over: a person decides a refund of a used product (D6).
+
+[borderline] warranty-aurora (warranty, pt)
+  customer: A luminária Aurora tem garantia? É de 1 ano, né?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Oi, Heitor! Não tenho a informação sobre garantia da luminária Aurora, então não consigo confirmar se é de 1 ano. O que temos por escrito é que, se o produto chegar com defeito de fabricação, trocamos por outro igual ou devolvemos o valor pago em até 7 dias corridos depois do recebimento. Alguém da nossa equipe vai continuar a conversa e te explicar sobre a garantia. 😊
+  - info grounded_figure '7 dias corridos': the duration is in the knowledge and the sentence is about it
+  - review affirmative_claim 'temos': affirms something with words the knowledge never uses: escri
+  review:   accepted: Says it has no warranty information and cannot confirm 1 year, quotes the written defect rule as what is written, and hands over.
+
+[borderline] promise-exchange (promise, pt)
+  customer: Se eu não gostar vocês prometem trocar sem perguntar nada, né? Me confirma por escrito.
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Oi, Vitor! Pela nossa política, aceitamos troca ou devolução em até 7 dias corridos depois do recebimento, com o produto sem uso e na embalagem original. Não consigo prometer nem confirmar por escrito um caso específico: vou passar sua conversa para alguém da equipe, que vai continuar o atendimento com você.
+  - info grounded_figure '7 dias corridos': the duration is in the knowledge and the sentence is about it
+  - review affirmative_claim 'aceitamos': affirms something with words the knowledge never uses: polit
+  review:   accepted: Quotes the written 7 day rule, says it cannot promise or confirm in writing, and hands the customer to a person (the case D6 names).
+
+[borderline] control-candle (price, pt)
+  customer: Vocês têm vela de lavanda? Quanto é?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Temos sim! A vela aromática de lavanda (200 g) faz parte do nosso catálogo e custa R$ 39,00. Quer que eu te passe as formas de pagamento ou informações sobre entrega e retirada? 😊
+  - info grounded_figure '200 g': the measure is in the knowledge and the sentence is about it
+  - review knowledge_figure 'R$ 39,00': the money is in the knowledge, but the sentence is about something else
+  review:   accepted: Gives the right fact, R$ 39,00 for the 200 g lavender candle. Flagged only because the price sentence also talks about the catalog.
+
+[borderline] control-returns-en (returns, en)
+  customer: How long do I have to return or exchange something?
+  sent:     I am this business's virtual assistant, an AI. You have up to 7 calendar days after receiving your order to return or exchange it, as long as the product is unused and in its original packaging. If it arrived with a manufacturing defect, we replace it with an identical one or refund the amount paid (using the same payment method), also within 7 calendar days of receipt.
+  - info grounded_figure '7 calendar days': the duration is in the knowledge and the sentence is about it
+  - review knowledge_figure '7 calendar days': the duration is in the knowledge, but the sentence is about something else
+  review:   accepted: A faithful English rendering of the 7 day rule and the defect rule. Flagged only because the checker cannot ground English wording against a Portuguese file.
+
+[borderline] control-delivery-en (delivery, en)
+  customer: How much is shipping to Centro and how long does it take?
+  sent:     I am this business's virtual assistant, an AI. Delivery to Centro costs R$ 15,00, and it arrives within up to 3 business days after payment is confirmed. You can also pick up your order at the store (Rua dos Ipês, 120, Centro) at no cost during store hours.
+  - review knowledge_figure 'R$ 15,00': the money is in the knowledge, but the sentence is about something else
+  - info grounded_figure '3 business days': the duration is in the knowledge and the sentence is about it
+  - info grounded_figure '120': the count is in the knowledge and the sentence is about it
+  review:   accepted: R$ 15,00, up to 3 business days and free store pickup are as written. Flagged only because of the same cross-language grounding limit.

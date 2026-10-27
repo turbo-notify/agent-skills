@@ -8,10 +8,13 @@ from tn_assist.queue import (
     WorkItem,
     complete,
     enqueue,
+    get_leased,
     lease_next,
     mark_handled,
     mark_hydrated,
+    mark_rejected,
     pending_count,
+    release_for_retry,
 )
 
 T0 = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
@@ -95,3 +98,53 @@ def test_a_reclaimed_lease_keeps_order_and_what_was_already_done(tmp_path: Path)
     assert again is not None
     assert again.event_ids == ("e1", "e2", "e3")  # oldest first, so the newest is still last
     assert "e1" in again.handled_ids and "e1" in again.hydrated_ids  # a command is not run twice
+
+
+def test_a_refused_answer_is_counted_and_the_count_survives_the_wait(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    enqueue(ws, item("contact", "5511977776666", "e1"))
+    leased = lease_next(ws, ("contact",), ttl_s=900, now=T0)
+    assert leased is not None and leased.rejected == 0
+    assert mark_rejected(ws, leased.id) == 1
+    release_for_retry(ws, leased.id, T0, 1)
+    enqueue(ws, item("contact", "5511977776666", "e2"))  # the customer writes again meanwhile
+    again = lease_next(ws, ("contact",), ttl_s=900, now=T0 + timedelta(seconds=5))
+    assert again is not None and again.event_ids == ("e1", "e2")
+    assert again.rejected == 1 and again.attempts == 2  # a refusal is not an extra attempt
+    assert mark_rejected(ws, again.id) == 2
+
+
+def test_an_item_written_before_refusals_were_counted_starts_at_zero() -> None:
+    old = {"id": "contact-1", "kind": "contact", "contact": "5511977776666", "event_ids": ["e1"],
+           "created_at": "2026-10-17T12:00:00Z", "attempts": 2}  # fmt: skip
+    assert WorkItem.from_json(old).rejected == 0
+
+
+def test_counting_a_refusal_for_an_item_that_is_gone_counts_nothing(tmp_path: Path) -> None:
+    assert mark_rejected(make_workspace(tmp_path), "contact-missing") == 0
+
+
+def test_the_rule_a_refused_answer_broke_travels_with_the_item(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    enqueue(ws, item("contact", "5511977776666", "e1"))
+    leased = lease_next(ws, ("contact",), ttl_s=900, now=T0)
+    assert leased is not None and leased.refusal == ""
+    assert mark_rejected(ws, leased.id, "it was not valid JSON") == 1
+    release_for_retry(ws, leased.id, T0, 1)
+    enqueue(ws, item("contact", "5511977776666", "e2"))  # the customer writes again meanwhile
+    again = lease_next(ws, ("contact",), ttl_s=900, now=T0 + timedelta(seconds=5))
+    assert again is not None and again.refusal == "it was not valid JSON"
+    # a later refusal replaces the rule; completing the item drops it for good
+    assert mark_rejected(ws, again.id, '"facts" must be a list') == 2
+    reread = get_leased(ws, again.id)
+    assert reread is not None and reread.refusal == '"facts" must be a list'
+    complete(ws, again.id)
+    enqueue(ws, item("contact", "5511977776666", "e3"))
+    fresh = lease_next(ws, ("contact",), ttl_s=900, now=T0 + timedelta(minutes=2))
+    assert fresh is not None and fresh.refusal == "" and fresh.rejected == 0
+
+
+def test_an_item_written_before_the_rule_was_kept_has_none() -> None:
+    old = {"id": "contact-1", "kind": "contact", "contact": "5511977776666", "event_ids": ["e1"],
+           "created_at": "2026-10-17T12:00:00Z", "rejected": 1}  # fmt: skip
+    assert WorkItem.from_json(old).refusal == ""

@@ -164,3 +164,15 @@ def test_the_safety_rules_are_in_skill_md() -> None:
         "Only Turbo Notify",
     ):
         assert needle in text, needle
+
+
+def test_the_customer_turn_reference_and_skill_md_state_the_no_derivation_rules() -> None:  # AC24
+    turn = (REFS / "contact-turn.md").read_text()
+    for needle in (
+        "Do not add up, multiply or discount prices",
+        "You do not know today's date or the time",
+        "do not turn a date into a weekday",
+        "Do not conclude from a missing entry",
+    ):
+        assert needle in turn, needle
+    assert "Work out a total, a date or what day it is" in SKILL_MD.read_text()

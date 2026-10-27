@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import threading
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -15,16 +16,17 @@ from tests.support.workspace import make_workspace
 from tn_assist.apply import list_drafts
 from tn_assist.config import load_config, save_config
 from tn_assist.deliver import outbox_add
+from tn_assist.i18n import t
 from tn_assist.paths import ContactKey, Workspace
 from tn_assist.profiles import KEY_ENV, UnsupportedHarness
-from tn_assist.queue import WorkItem, enqueue, lease_next
+from tn_assist.queue import WorkItem, enqueue, lease_next, pending_count
 from tn_assist.runner import (
     ApiError,
     RestApi,
     RunnerConfig,
     run_cycle,
 )
-from tn_assist.state import ContactState, load_state
+from tn_assist.state import ContactState, load_state, save_state
 from tn_assist.store import WorkspaceLock, read_jsonl
 
 KEY = "tn_live_" + "k" * 32
@@ -257,6 +259,292 @@ def test_a_garbled_answer_is_retried_not_sent(tmp_path: Path) -> None:
     assert [r[2] for r in api.replies] == [f.disclosed("Olá!")]
 
 
+def message(preview: str, at: str, **kw: Any) -> dict[str, Any]:
+    return f.inbound_text(preview=preview, created_at=at, **kw)
+
+
+def test_a_refused_answer_is_asked_again_at_the_next_cycle_not_half_an_hour_later(
+    tmp_path: Path,
+) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("oi", "2026-10-17T12:01:00Z"))
+    harness = FakeHarness("I would be happy to help!", '{"reply": "Olá!"}')
+    first = cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    assert first.failed == 1 and api.replies == []
+    # an outage waits 1, 5, 25 minutes; a refused answer is simply asked for again
+    second = cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=5))
+    assert second.processed == 1 and [r[2] for r in api.replies] == [f.disclosed("Olá!")]
+    assert len(harness.children) == 2
+    assert [r["event"] for r in read_jsonl(ws.path("logs", "runner.jsonl"))].count(
+        "item_rejected"
+    ) == 1
+
+
+def test_two_refused_answers_in_a_row_hand_the_customer_over_in_their_language(
+    tmp_path: Path,
+) -> None:
+    ws, cfg, api = setup(tmp_path)
+    save_state(ws, ANA, replace(load_state(ws, ANA), language="en"))  # they have written in English
+    api.add(message("hello?", "2026-10-17T12:01:00Z"))
+    harness = FakeHarness("nope", "still nope", '{"reply": "never asked for"}')
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    assert api.replies == []
+    last = cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=5))
+    assert last.failed == 1
+    # the same text a reply of null gets, in the customer's language, with the AI line
+    assert [r[2] for r in api.replies] == [f.disclosed(t("handoff_default", "en"), "en")]
+    assert load_state(ws, ANA).state is ContactState.HANDOFF
+    assert len(harness.children) == 2  # no third try
+    told = [s[2] for s in api.sends if s[1] in (f.OWNER, f.CONNECTED)]
+    assert any(
+        t("reason_decision_unreadable", "pt") in text for text in told
+    )  # the people know why
+
+
+def refuse_twice(
+    tmp_path: Path, text: str, *, known: str | None = None
+) -> tuple[Workspace, FakeApi]:
+    ws, cfg, api = setup(tmp_path)
+    if known:
+        save_state(ws, ANA, replace(load_state(ws, ANA), language=known))
+    api.add(message(text, "2026-10-17T12:01:00Z"))
+    refused = FakeHarness("nope", "still nope")
+    cycle(cfg, api, refused, T0 + timedelta(minutes=1))
+    cycle(cfg, api, refused, T0 + timedelta(minutes=1, seconds=5))
+    return ws, api
+
+
+def test_a_new_customer_who_writes_english_gets_the_hand_off_in_english(tmp_path: Path) -> None:
+    """No answer of the model recorded their language: the helper reads it from their words."""
+    ws, api = refuse_twice(tmp_path, "Hi! What time do you open on Saturday?")
+    assert [r[2] for r in api.replies] == [f.disclosed(t("handoff_default", "en"), "en")]
+    assert load_state(ws, ANA).language == "en"  # and what follows keeps speaking English
+
+
+def test_the_last_message_decides_when_the_customer_changed_language(tmp_path: Path) -> None:
+    _, api = refuse_twice(tmp_path, "Boa tarde, qual o prazo de troca?", known="en")
+    assert [r[2] for r in api.replies] == [f.disclosed(t("handoff_default", "pt"), "pt")]
+
+
+def test_a_message_with_no_clear_language_keeps_the_language_already_known(tmp_path: Path) -> None:
+    ws, api = refuse_twice(tmp_path, "👍", known="en")
+    assert [r[2] for r in api.replies] == [f.disclosed(t("handoff_default", "en"), "en")]
+    assert load_state(ws, ANA).language == "en"
+
+
+def test_a_message_with_no_clear_language_and_none_known_uses_the_workspace_language(
+    tmp_path: Path,
+) -> None:
+    ws, api = refuse_twice(tmp_path, "👍")
+    assert [r[2] for r in api.replies] == [f.disclosed(t("handoff_default", "pt"), "pt")]
+
+
+def test_the_hand_off_after_two_refusals_is_what_a_reply_of_null_gets(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("oi", "2026-10-17T12:01:00Z"))
+    cycle(cfg, api, FakeHarness('{"reply": null}'), T0 + timedelta(minutes=1))
+    expected = [r[2] for r in api.replies]
+    ws2, cfg2, api2 = setup(tmp_path / "other")
+    api2.add(message("oi", "2026-10-17T12:01:00Z"))
+    refused = FakeHarness("nope", "nope")
+    cycle(cfg2, api2, refused, T0 + timedelta(minutes=1))
+    cycle(cfg2, api2, refused, T0 + timedelta(minutes=1, seconds=5))
+    assert [r[2] for r in api2.replies] == expected and expected
+
+
+def test_a_refused_answer_does_not_hold_another_customer(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("pergunta de Ana", "2026-10-17T12:01:00Z"))
+    api.add(message("pergunta de Bruno", "2026-10-17T12:01:05Z", sender=f.BRUNO, sender_name="B"))
+    harness = FakeHarness(
+        rules=[("pergunta de Ana", "garbled"), ("pergunta de Bruno", '{"reply": "ok"}')]
+    )
+    report = cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    assert report.processed == 1 and report.failed == 1
+    assert [r[1] for r in api.replies] == [f.BRUNO]  # Bruno was answered in the same cycle
+
+
+def test_the_messages_behind_a_refused_answer_are_answered_with_it(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("primeira pergunta", "2026-10-17T12:01:00Z"))
+    harness = FakeHarness("garbled", '{"reply": "Respondi as duas."}')
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    api.add(message("segunda pergunta", "2026-10-17T12:01:20Z"))
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=30))
+    prompt = harness.children[1].stdin
+    assert "primeira pergunta" in prompt and "segunda pergunta" in prompt
+    assert [r[2] for r in api.replies] == [f.disclosed("Respondi as duas.")]
+
+
+def test_an_outage_is_not_counted_as_a_refusal_and_keeps_its_pause(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("oi", "2026-10-17T12:01:00Z"))
+    harness = FakeHarness("garbled", '{"reply": "Olá!"}')
+    harness.fail = 1  # the process does not run once: an outage, not an answer
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=5))
+    assert harness.children and len(harness.children) == 1  # the pause of an outage still holds
+    cycle(cfg, api, harness, T0 + timedelta(minutes=2, seconds=5))  # the outage pause is over
+    assert api.replies == []  # the model answered, and the answer was refused: once, not twice
+    cycle(cfg, api, harness, T0 + timedelta(minutes=2, seconds=10))
+    assert [r[2] for r in api.replies] == [
+        f.disclosed("Olá!")
+    ]  # one refusal asked again, no hand-off
+    assert load_state(ws, ANA).state is ContactState.ACTIVE
+
+
+def test_two_refused_answers_to_an_administrator_are_told_not_dropped(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("o que você acha do movimento?", "2026-10-17T12:01:00Z", sender=f.OWNER))
+    harness = FakeHarness("garbled", "garbled again")
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=5))
+    assert [s[2] for s in api.sends if s[1] == f.OWNER] == [t("console_unreadable", "pt")]
+    again = cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=10))
+    assert again.children == 0  # nothing is left waiting behind it
+
+
+def heard(api: FakeApi, text: str, at: str, **kw: Any) -> None:
+    """A message whose whole text the platform can still return (hydration reads it)."""
+    event = message(text, at, **kw)
+    api.add(event)
+    api.texts[event["data"]["id"]] = text
+
+
+def events_logged(ws: Workspace) -> list[str]:
+    return [str(r["event"]) for r in read_jsonl(ws.path("logs", "runner.jsonl"))]
+
+
+SILENCE = '{"reply": null, "facts": [], "escalate": null, "no_reply_needed": true}'
+
+
+def test_a_thumbs_up_the_model_says_needs_no_reply_is_handled_in_silence(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    heard(api, "👍", "2026-10-17T12:01:00Z")
+    harness = FakeHarness(SILENCE)
+    report = cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    assert report.processed == 1 and report.silenced == 1 and report.failed == 0
+    assert api.replies == [] and api.sends == []  # no answer, no hand-off, no notice
+    assert load_state(ws, ANA).state is ContactState.ACTIVE
+    assert pending_count(ws) == 0 and not list(ws.path("queue", "leased").glob("*.json"))
+    events = events_logged(ws)
+    assert "contact_silenced" in events and "item_rejected" not in events
+    # handled: the next cycle has nothing to do, and no model is started
+    assert cycle(cfg, api, harness, T0 + timedelta(minutes=2)).children == 0
+
+
+def test_a_silence_asked_for_a_real_question_goes_to_the_default_hand_off(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    heard(api, "ok, e o frete?", "2026-10-17T12:01:00Z")
+    harness = FakeHarness(SILENCE)
+    report = cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    assert report.silenced == 0 and report.failed == 0  # not silenced, and not a refusal either
+    assert [r[2] for r in api.replies] == [f.disclosed(t("handoff_default", "pt"))]
+    assert load_state(ws, ANA).state is ContactState.HANDOFF
+    assert len(harness.children) == 1  # no second try: the answer was readable
+    assert "item_rejected" not in events_logged(ws)
+    told = [s[2] for s in api.sends if s[1] in (f.OWNER, f.CONNECTED)]
+    assert any(t("reason_silence_refused", "pt") in text for text in told)
+
+
+def test_a_reply_of_null_without_the_flag_is_a_hand_off_exactly_as_before(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("👍", "2026-10-17T12:01:00Z"))
+    report = cycle(cfg, api, FakeHarness('{"reply": null}'), T0 + timedelta(minutes=1))
+    assert report.silenced == 0
+    assert [r[2] for r in api.replies] == [f.disclosed(t("handoff_default", "pt"))]
+    assert load_state(ws, ANA).state is ContactState.HANDOFF
+
+
+def test_the_customer_is_answered_after_a_silent_turn(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    heard(api, "obrigado", "2026-10-17T12:01:00Z")
+    harness = FakeHarness(SILENCE, '{"reply": "Domingo fechado."}')
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    heard(api, "e vocês abrem domingo?", "2026-10-17T12:05:00Z")
+    cycle(cfg, api, harness, T0 + timedelta(minutes=5))
+    assert [r[2] for r in api.replies] == [f.disclosed("Domingo fechado.")]
+
+
+def test_the_pack_asks_for_silence_only_in_words_and_says_what_a_null_reply_does(
+    tmp_path: Path,
+) -> None:
+    ws, cfg, api = setup(tmp_path)
+    heard(api, "obrigado", "2026-10-17T12:01:00Z")
+    harness = FakeHarness(SILENCE)
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    prompt = harness.children[0].stdin
+    assert '"no_reply_needed": true or false' in prompt
+    assert 'A "reply" of null without it hands the customer to a person' in prompt
+
+
+def test_the_second_try_names_the_rule_the_first_answer_broke(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("oi, quanto custa?", "2026-10-17T12:01:00Z"))
+    harness = FakeHarness("I would be happy to help!", '{"reply": "Custa R$ 49."}')
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=5))
+    first, second = (child.stdin for child in harness.children)
+    assert "was refused" not in first
+    line = second.rstrip().splitlines()[-1]
+    assert line == (
+        "Your previous answer to this message was refused because it had no JSON object in it. "
+        "Answer again with one JSON object in the format above."
+    )
+    assert [r[2] for r in api.replies] == [f.disclosed("Custa R$ 49.")]
+
+
+@pytest.mark.parametrize(
+    ("answer", "reason"),
+    [
+        ("{not json}", "it was not valid JSON"),
+        ('["a"]', "it had no JSON object in it"),
+        ('{"reply": "oi", "send_to": "x"}', "it had a field that is not in the format"),
+        ('{"reply": 3}', '"reply" must be text of at most 4000 characters, or null'),
+        ('{"facts": "x"}', '"facts" must be a list'),
+        ('{"escalate": {"reason": "r"}}', '"escalate" must be null or an object with exactly'),
+        ('{"state": "stop"}', '"state" must be null or "do_not_contact"'),
+        ('{"no_reply_needed": "yes"}', '"no_reply_needed" must be true, false or null'),
+    ],
+)
+def test_each_refusal_is_named_in_one_short_line_with_none_of_the_customers_words(
+    tmp_path: Path, answer: str, reason: str
+) -> None:
+    ws, cfg, api = setup(tmp_path)
+    secret = "meu CPF é 123.456.789-00"
+    api.add(message(secret, "2026-10-17T12:01:00Z"))
+    harness = FakeHarness(answer, '{"reply": "ok"}')
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=5))
+    second = harness.children[1].stdin
+    line = second.rstrip().splitlines()[-1]
+    assert line.startswith("Your previous answer to this message was refused because ")
+    assert reason in line and len(line) < 400
+    assert secret not in line and "123.456" not in line
+
+
+def test_the_note_does_not_outlive_the_refusal(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("primeira", "2026-10-17T12:01:00Z"))
+    harness = FakeHarness("garbled", '{"reply": "ok"}')
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=5))
+    api.add(message("segunda", "2026-10-17T12:10:00Z"))
+    harness.answers.append('{"reply": "de novo"}')
+    cycle(cfg, api, harness, T0 + timedelta(minutes=10))
+    assert "was refused" in harness.children[1].stdin
+    assert "was refused" not in harness.children[2].stdin  # a new message, a clean pack
+
+
+def test_an_administrators_second_try_is_told_the_rule_too(tmp_path: Path) -> None:
+    ws, cfg, api = setup(tmp_path)
+    api.add(message("o que você acha do movimento?", "2026-10-17T12:01:00Z", sender=f.OWNER))
+    harness = FakeHarness("garbled", '{"reply": "Calmo."}')
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1))
+    cycle(cfg, api, harness, T0 + timedelta(minutes=1, seconds=5))
+    assert "was refused because it had no JSON object" in harness.children[1].stdin
+
+
 def test_a_transient_delivery_failure_is_retried_with_the_same_key(tmp_path: Path) -> None:
     ws, cfg, api = setup(tmp_path)
     e = f.inbound_text(preview="oi", created_at="2026-10-17T12:01:00Z")
@@ -401,6 +689,8 @@ def test_the_rest_client_speaks_the_documented_api() -> None:
         }
     finally:
         server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
 
 
 def test_an_unreachable_server_is_a_network_error() -> None:

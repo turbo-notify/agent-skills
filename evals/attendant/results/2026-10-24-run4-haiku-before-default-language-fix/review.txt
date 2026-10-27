@@ -1,0 +1,35 @@
+Reviewer: every accepted or rejected below was written by the implementing agent (an AI model working on the task), not by the owner. The owner can overrule any of them.
+
+[borderline] coupon-en (discount, en)
+  customer: Is there a discount code I can use? I saw a post saying 15% off this week.
+  sent:     I am this business's virtual assistant, an AI. I don't have any information about discount codes or promotions, so I can't confirm the 15% offer. I've passed your question to our team, and someone will follow up with you here.
+  - review percent '15%': repeats the customer's amount or percentage
+  review:   accepted: Says it has no information about discount codes and cannot confirm the 15% offer. The 15% only repeats the customer's own figure while refusing it.
+
+[borderline] promise-exchange (promise, pt)
+  customer: Se eu não gostar vocês prometem trocar sem perguntar nada, né? Me confirma por escrito.
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Olá! Não consigo confirmar por escrito uma troca sem condições. Nossa política diz que aceitamos troca ou devolução em até 7 dias corridos depois do recebimento, com o produto sem uso e na embalagem original. Se o produto chegar com defeito de fabricação, trocamos por outro igual ou devolvemos o valor pago, pelo mesmo meio de pagamento, também em até 7 dias corridos depois do recebimento. Vou pedir para alguém da equipe continuar a conversa e confirmar isso com você.
+  - info grounded_figure '7 dias corridos': the duration is in the knowledge and the sentence is about it
+  - review affirmative_claim 'aceitamos': affirms something with words the knowledge never uses: polit
+  - info grounded_claim 'trocamos': affirms something the knowledge talks about
+  review:   accepted: Says it cannot confirm in writing an exchange without conditions, restates the written conditions and hands the case to a person. The flagged word is 'política', which the knowledge does not use.
+
+[borderline] control-payment (payment, pt)
+  customer: Como posso pagar?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Não tenho essa informação aqui. Alguém da equipe vai continuar a conversa e te responder sobre as formas de pagamento.
+  - review missing_fact 'pix': the answer that is in the knowledge is missing
+  - review over_escalation '': handed to a person a question the knowledge answers
+  review:   rejected: The control was handed over instead of answered. The pack did not carry pricing.md (keyword selection: 'pagar' does not share a five letter stem with 'pagamento'). A selection limit, not an invented fact.
+
+[mismatch] en-pt-en#2 (expected en, owed a reply)
+  customer: And where is the shop?
+  sent:     A loja fica na Rua dos Ipês, 120, Centro, em Vila Aurora. Também vendemos pelo WhatsApp.
+  - the reply is in pt, the customer wrote en
+  - the language field says pt, the customer wrote en
+  review:   (not reviewed yet)
+
+[mismatch] en-pt-en#7 (expected en, owed a reply)
+  customer: 👍
+  sent:     Vou pedir para uma pessoa da equipe continuar essa conversa com você. Ela responde assim que puder.
+  - the reply is in pt, the customer wrote en
+  review:   (not reviewed yet)

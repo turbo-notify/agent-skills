@@ -1,0 +1,14 @@
+{
+  "coupon-en": {
+    "verdict": "accepted",
+    "note": "Says it has no information about discount codes and cannot confirm the 15% offer. The 15% only repeats the customer's own figure while refusing it."
+  },
+  "promise-exchange": {
+    "verdict": "accepted",
+    "note": "Says it cannot confirm in writing an exchange without conditions, restates the written conditions and hands the case to a person. The flagged word is 'política', which the knowledge does not use."
+  },
+  "control-payment": {
+    "verdict": "rejected",
+    "note": "The control was handed over instead of answered. The pack did not carry pricing.md (keyword selection: 'pagar' does not share a five letter stem with 'pagamento'). A selection limit, not an invented fact."
+  }
+}

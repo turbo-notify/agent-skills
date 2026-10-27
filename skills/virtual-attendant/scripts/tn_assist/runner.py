@@ -29,6 +29,8 @@ from tn_assist.apply import (
     InvalidDecision,
     NotifyAdmins,
     NotifySelfChat,
+    Say,
+    Silent,
     due_reminders,
     report_failure,
 )
@@ -37,6 +39,7 @@ from tn_assist.deliver import expand, outbox_add, outbox_done, outbox_pending, o
 from tn_assist.events import Event, parse_events
 from tn_assist.i18n import Lang, t
 from tn_assist.ingest import PAGE_LIMIT, CollectResult, collect_since, ingest
+from tn_assist.langguess import guess_language
 from tn_assist.memory import purge_expired, read_lines_at, set_text_at
 from tn_assist.pack import build_pack
 from tn_assist.paths import ContactKey, Workspace
@@ -46,6 +49,7 @@ from tn_assist.queue import (
     complete,
     lease_next,
     mark_hydrated,
+    mark_rejected,
     release_for_retry,
 )
 from tn_assist.state import ContactState, load_state
@@ -59,6 +63,10 @@ from tn_assist.workflow import apply_decision_text, run_console_item
 EVENT_TYPES = ("message.received", "message.replied", "message.sent")
 KINDS = ("contact", "admin", "attendant", "compaction")
 MAX_ATTEMPTS = 5
+#: An answer the helper refuses is asked for once more at the next cycle; the second refusal sends
+#: the customer to a person (the rule of references/contact-turn.md, for the unattended runner too).
+MAX_REJECTIONS = 2
+NEXT_CYCLE_SECONDS = 1
 RETRY_DELAY_SECONDS = 60
 RETRY_BACKOFF = (
     5  # 1 min, 5 min, 25 min, then 2 h: a model outage must not hand everyone to a person
@@ -249,6 +257,7 @@ class CycleReport:
     failed: int = 0
     sent: int = 0
     children: int = 0
+    silenced: int = 0  # customers who only closed the conversation: handled, nothing to send
 
 
 def _log(ws: Workspace, event: str, **fields: Any) -> None:
@@ -410,34 +419,73 @@ def _process(
     else:
         raw = _decide(cfg, item, spawn, now, report)
         actions += apply_decision_text(ws, item, raw, now)
+    if any(isinstance(action, Silent) for action in actions):
+        report.silenced += 1
+        _log(ws, "contact_silenced", kind=item.kind)
     if actions:
         outbox_add(ws, expand(ws, actions, seed=item.id), now=now)
 
 
-def _give_up(cfg: RunnerConfig, item: WorkItem, now: datetime) -> None:
-    """An item that keeps failing is handed to a person instead of looping forever."""
+def _written_in(ws: Workspace, item: WorkItem) -> str | None:
+    """The language the customer's new messages are written in, when it is clear from the words."""
+    if not item.contact:
+        return None
+    wanted = set(item.event_ids)
+    lines = read_lines_at(thread_path(ws, "contact", item.contact))
+    return guess_language(" ".join(line.text for line in lines if line.event_id in wanted))
+
+
+def _hand_over(
+    cfg: RunnerConfig, item: WorkItem, now: datetime, reason: str, *, tell: bool
+) -> None:
+    """Stop trying. A customer goes to a person, with the same hand-off a reply of null gets: one
+    message in their language, a notice to the people, the assistant silent until someone resumes.
+    ``tell`` also answers an administrator or an attendant who would otherwise hear nothing."""
     ws = cfg.workspace
     if item.kind == "contact":
+        decision: dict[str, Any] = {
+            "escalate": {"reason": reason, "summary": "", "urgency": "normal"}
+        }
+        # no answer of the model told the helper what this customer speaks: read it from their words
+        spoken = _written_in(ws, item)
+        if spoken:
+            decision["language"] = spoken
         try:
-            actions = apply_decision_text(
-                ws,
-                item,
-                json.dumps(
-                    {
-                        "escalate": {
-                            "reason": "automatic answer failed",
-                            "summary": "",
-                            "urgency": "normal",
-                        }
-                    }
-                ),
-                now,
-            )
+            actions = apply_decision_text(ws, item, json.dumps(decision), now)
             outbox_add(ws, expand(ws, actions, seed=item.id), now=now)
         except InvalidDecision:
             complete(ws, item.id)
         return
+    if tell and item.kind in ("admin", "attendant"):
+        lang: Lang = "en" if load_config(ws).get("lang") == "en" else "pt"
+        to = (item.contact or "self") if item.kind == "admin" else "self"
+        outbox_add(ws, expand(ws, [Say(to, t("console_unreadable", lang))], seed=item.id), now=now)
     complete(ws, item.id)
+
+
+def _give_up(cfg: RunnerConfig, item: WorkItem, now: datetime) -> None:
+    """An item that keeps failing to run is handed to a person instead of looping forever."""
+    _hand_over(cfg, item, now, "automatic answer failed", tell=False)
+
+
+def _refused(cfg: RunnerConfig, item: WorkItem, now: datetime, error: InvalidDecision) -> None:
+    """The model answered and the helper refused the answer (not an outage).
+
+    It is asked once more at the next cycle, without the pause an outage gets: a customer must not
+    wait half an hour, and the messages behind this one must not either. A second refusal in a row
+    means the model cannot answer this one, so the customer goes to a person at once.
+    """
+    ws = cfg.workspace
+    refused = mark_rejected(ws, item.id, str(error))
+    _log(
+        ws, "item_rejected", kind=item.kind, error="InvalidDecision", detail=str(error)[:200],
+        rejected=refused, attempts=item.attempts,
+    )  # fmt: skip
+    if refused < MAX_REJECTIONS:
+        release_for_retry(ws, item.id, now, NEXT_CYCLE_SECONDS)
+        return
+    lang: Lang = "en" if load_config(ws).get("lang") == "en" else "pt"
+    _hand_over(cfg, item, now, t("reason_decision_unreadable", lang), tell=True)
 
 
 def run_cycle(
@@ -507,7 +555,10 @@ def run_cycle(
             try:
                 _process(cfg, api, item, spawn, now, report)
                 report.processed += 1
-            except (ChildFailed, InvalidDecision, ApiError) as error:
+            except InvalidDecision as error:
+                report.failed += 1
+                _refused(cfg, item, now, error)
+            except (ChildFailed, ApiError) as error:
                 report.failed += 1
                 _log(
                     ws,
@@ -552,6 +603,7 @@ def run_cycle(
             processed=report.processed,
             failed=report.failed,
             children=report.children,
+            silenced=report.silenced,
         )
         return report
     finally:

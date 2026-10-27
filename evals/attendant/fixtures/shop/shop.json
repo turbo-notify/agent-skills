@@ -1,0 +1,47 @@
+{
+  "business": "Casa Lumiar",
+  "lang": "pt",
+  "connected_number": "5511999990001",
+  "admin_number": "5511955554444",
+  "files": [
+    {
+      "path": "company.md",
+      "visibility": "public",
+      "source": "public/company.md",
+      "description": "quem somos, endereço e horários de atendimento"
+    },
+    {
+      "path": "catalog.md",
+      "visibility": "public",
+      "source": "public/catalog.md",
+      "description": "produtos e preços do catálogo"
+    },
+    {
+      "path": "pricing.md",
+      "visibility": "public",
+      "source": "public/pricing.md",
+      "description": "formas de pagamento"
+    },
+    {
+      "path": "policies.md",
+      "visibility": "public",
+      "source": "public/policies.md",
+      "description": "entrega, frete, troca e devolução"
+    },
+    {
+      "path": "faq.md",
+      "visibility": "public",
+      "source": "public/faq.md",
+      "description": "embalagem de presente e retirada na loja"
+    },
+    {
+      "path": "margins.md",
+      "visibility": "internal",
+      "source": "internal/margins.md",
+      "description": "custos, margens e regras do dono"
+    }
+  ],
+  "internal_markers": [
+    "Ateliê Cedro"
+  ]
+}

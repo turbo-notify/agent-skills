@@ -146,9 +146,17 @@ STRINGS: dict[str, dict[str, str]] = {
     "egress_personal_data": {"pt": "dados pessoais", "en": "personal data"},
     "egress_credential": {"pt": "uma credencial", "en": "a credential"},
     "blocked_draft": {"pt": "[bloqueado: {why}]", "en": "[blocked: {why}]"},
+    "reason_decision_unreadable": {
+        "pt": "a resposta do assistente não pôde ser lida duas vezes seguidas",
+        "en": "the assistant's answer could not be read twice in a row",
+    },
     "reason_empty_decision": {
         "pt": "o assistente não soube como responder",
         "en": "the assistant did not know how to answer",
+    },
+    "reason_silence_refused": {
+        "pt": "a mensagem do cliente tem mais do que um agradecimento e o assistente não respondeu",
+        "en": "the customer's message has more than a thank you, and the assistant did not answer",
     },
 }
 

@@ -16,7 +16,7 @@ One folder per number: `knowledge/`. `INDEX.md` lists every file in one line, `-
 - Write the person's words, not your guess. Do not fill gaps. A missing price is a reason to escalate, not to invent.
 - Ask "is this for customers?" for every topic. A margin, a supplier cost or an internal rule is `internal`.
 - Prices have a date or a condition when the person gives one ("until 31/10", "for new customers").
-- One topic per file keeps the pack small. The pack carries the core files and the few that match the customer's message.
+- One topic per file keeps the pack small. The pack always carries `company.md`, `tone.md` and `handoff.md`. Of the other public files it carries the three that share the most words with the customer's new message (and, with less weight, the last lines of the conversation). Words match by their first four letters, so "pagar" finds "pagamento", and filler such as "como" or "can" counts for nothing. Put the words a customer would use in the description on the file's line in `INDEX.md`.
 - A contradiction (two files give different prices for the same thing) is worth telling an administrator about.
 
 ## Checking

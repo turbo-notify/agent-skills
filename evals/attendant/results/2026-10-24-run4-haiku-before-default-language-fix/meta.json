@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-24",
+  "started": "2026-10-24T09:05:27",
+  "harness": "claude-code",
+  "role": "contact",
+  "model_requested": "haiku",
+  "model_used": [
+    "claude-haiku-5-5"
+  ],
+  "cli": "2.1.310 (Claude Code)",
+  "helper_version": "0.3.0",
+  "timeout_s": 240.0,
+  "attempts": 3,
+  "set": "all",
+  "label": "run4-haiku-before-default-language-fix",
+  "instructions": "the code of run 3 (no-derivation rules, tolerant language field), on the smallest model; informational",
+  "scored_with": "the final checker, rescored from the stored replies (no model call)"
+}

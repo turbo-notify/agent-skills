@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 CONSOLE_STRINGS: dict[str, dict[str, str]] = {
+    "console_unreadable": {
+        "pt": "Não consegui responder a essa mensagem. Tente de novo ou envie /ajuda para ver os comandos.",
+        "en": "I could not answer that message. Try again, or send /help to see the commands.",
+    },
     "help_header": {"pt": "Comandos que você pode usar:", "en": "Commands you can use:"},
     "help_help": {"pt": "/ajuda: mostra esta lista", "en": "/help: shows this list"},
     "help_status": {

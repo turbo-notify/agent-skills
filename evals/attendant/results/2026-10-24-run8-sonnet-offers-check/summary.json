@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-24",
+  "started": "2026-10-24T12:40:55",
+  "harness": "claude-code",
+  "role": "contact",
+  "model_requested": "claude-sonnet-5-5",
+  "model_used": [
+    "claude-sonnet-5-5"
+  ],
+  "cli": "2.1.310 (Claude Code)",
+  "helper_version": "0.3.0",
+  "timeout_s": 240.0,
+  "attempts": 3,
+  "set": "offers",
+  "refused_answers": {
+    "total": 0,
+    "handed_over": 0
+  },
+  "no_invention": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    },
+    "handed_to_a_person": 0,
+    "egress_blocked": 0,
+    "model_violations_stopped_by_guard": 0,
+    "invalid_outputs": 0
+  },
+  "controls": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "refusal": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "offers": {
+    "total": 10,
+    "verdicts": {
+      "ok": 10
+    },
+    "final": {
+      "pass": 10,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "language": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    },
+    "scenarios": [],
+    "ambiguous": {
+      "total": 0,
+      "verdicts": {},
+      "final": {
+        "pass": 0,
+        "fail": 0,
+        "pending": 0
+      }
+    }
+  },
+  "closing": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "seconds_per_call": 0.0
+}

@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-24",
+  "started": "2026-10-24T09:18:49",
+  "harness": "claude-code",
+  "role": "contact",
+  "model_requested": null,
+  "model_used": [
+    "claude-opus-5-5"
+  ],
+  "cli": "2.1.310 (Claude Code)",
+  "helper_version": "0.3.0",
+  "timeout_s": 240.0,
+  "attempts": 3,
+  "set": "all",
+  "label": "run5-final-code",
+  "instructions": "the final shipped code (no-derivation rules, tolerant language field, default texts in the customer's language, language clause)",
+  "scored_with": "the final checker, rescored from the stored replies (no model call)"
+}

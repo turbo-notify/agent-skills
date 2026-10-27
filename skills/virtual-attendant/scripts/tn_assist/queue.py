@@ -32,6 +32,10 @@ class WorkItem:
     hydrated_ids: tuple[str, ...] = ()
     handled_ids: tuple[str, ...] = ()
     attempts: int = 0
+    rejected: int = 0  # answers the model gave that the helper refused (not outages)
+    #: Which rule the last refused answer broke, in the helper's own words (never anyone's text).
+    #: The pack of the next try carries it as one line.
+    refusal: str = ""
 
     @classmethod
     def new(
@@ -66,6 +70,8 @@ class WorkItem:
             "hydrated_ids": list(self.hydrated_ids),
             "handled_ids": list(self.handled_ids),
             "attempts": self.attempts,
+            "rejected": self.rejected,
+            "refusal": self.refusal,
         }
 
     @classmethod
@@ -79,6 +85,8 @@ class WorkItem:
             hydrated_ids=tuple(data.get("hydrated_ids") or ()),
             handled_ids=tuple(data.get("handled_ids") or ()),
             attempts=int(data.get("attempts", 0)),
+            rejected=int(data.get("rejected", 0)),
+            refusal=str(data.get("refusal") or ""),
         )
 
 
@@ -103,6 +111,8 @@ def _merge(old: WorkItem, new: WorkItem) -> WorkItem:
         hydrated_ids=_union(old.hydrated_ids, new.hydrated_ids),
         handled_ids=_union(old.handled_ids, new.handled_ids),
         attempts=max(old.attempts, new.attempts),
+        rejected=max(old.rejected, new.rejected),
+        refusal=old.refusal or new.refusal,
     )  # older lines stay in the transcript
 
 
@@ -207,6 +217,22 @@ def mark_handled(ws: Workspace, item_id: str, event_id: str) -> None:
         item = replace(item, handled_ids=item.handled_ids + (event_id,))
     data["item"] = item.to_json()
     write_json_atomic(path, data)
+
+
+def mark_rejected(ws: Workspace, item_id: str, reason: str = "") -> int:
+    """The model answered and the helper refused the answer. Returns how many it has refused.
+
+    ``reason`` is the rule the answer broke; the next pack for the item says it in one line.
+    """
+    path = _leased_dir(ws) / f"{item_id}.json"
+    data = read_json(path, None)
+    if not isinstance(data, dict):
+        return 0
+    item = WorkItem.from_json(data["item"])
+    item = replace(item, rejected=item.rejected + 1, refusal=reason)
+    data["item"] = item.to_json()
+    write_json_atomic(path, data)
+    return item.rejected
 
 
 def get_leased(ws: Workspace, item_id: str) -> WorkItem | None:

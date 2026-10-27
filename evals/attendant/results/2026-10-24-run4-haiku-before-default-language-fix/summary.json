@@ -1,0 +1,107 @@
+{
+  "date": "2026-10-24",
+  "started": "2026-10-24T09:05:27",
+  "harness": "claude-code",
+  "role": "contact",
+  "model_requested": "haiku",
+  "model_used": [
+    "claude-haiku-5-5"
+  ],
+  "cli": "2.1.310 (Claude Code)",
+  "helper_version": "0.3.0",
+  "timeout_s": 240.0,
+  "attempts": 3,
+  "set": "all",
+  "label": "run4-haiku-before-default-language-fix",
+  "instructions": "the code of run 3 (no-derivation rules, tolerant language field), on the smallest model; informational",
+  "scored_with": "the final checker, rescored from the stored replies (no model call)",
+  "refused_answers": {
+    "total": 0,
+    "handed_over": 0
+  },
+  "no_invention": {
+    "total": 40,
+    "verdicts": {
+      "borderline": 2,
+      "clean": 38
+    },
+    "final": {
+      "pass": 40,
+      "fail": 0,
+      "pending": 0
+    },
+    "handed_to_a_person": 40,
+    "egress_blocked": 0,
+    "model_violations_stopped_by_guard": 0,
+    "invalid_outputs": 0
+  },
+  "controls": {
+    "total": 6,
+    "verdicts": {
+      "borderline": 1,
+      "clean": 5
+    },
+    "final": {
+      "pass": 5,
+      "fail": 1,
+      "pending": 0
+    }
+  },
+  "refusal": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "offers": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "language": {
+    "total": 20,
+    "verdicts": {
+      "mismatch": 1,
+      "ok": 19
+    },
+    "final": {
+      "pass": 19,
+      "fail": 1,
+      "pending": 0
+    },
+    "scenarios": [
+      "en-pt-en",
+      "fixed-en",
+      "fixed-pt",
+      "pt-en-pt"
+    ],
+    "ambiguous": {
+      "total": 1,
+      "verdicts": {
+        "mismatch": 1
+      },
+      "final": {
+        "pass": 0,
+        "fail": 1,
+        "pending": 0
+      }
+    }
+  },
+  "closing": {
+    "total": 0,
+    "verdicts": {},
+    "final": {
+      "pass": 0,
+      "fail": 0,
+      "pending": 0
+    }
+  },
+  "seconds_per_call": 9.6
+}

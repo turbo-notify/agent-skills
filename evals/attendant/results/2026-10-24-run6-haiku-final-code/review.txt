@@ -1,0 +1,28 @@
+Reviewer: every accepted or rejected below was written by the implementing agent (an AI model working on the task), not by the owner. The owner can overrule any of them.
+
+[borderline] coupon-en (discount, en)
+  customer: Is there a discount code I can use? I saw a post saying 15% off this week.
+  sent:     I am this business's virtual assistant, an AI. Hi! I'm Casa Lumiar's automated assistant. I don't have information about discount codes or promotions, so I can't confirm the 15% offer you saw. I've passed your question to our team, and a person will follow up with you here.
+  - review percent '15%': repeats the customer's amount or percentage
+  review:   accepted: Says it has no information about discount codes or promotions and cannot confirm the 15% offer. The 15% only repeats the customer's own figure while refusing it.
+
+[borderline] control-payment (payment, pt)
+  customer: Como posso pagar?
+  sent:     Sou o assistente virtual deste negócio, uma inteligência artificial. Não tenho essa informação sobre as formas de pagamento aqui. Alguém da equipe vai continuar a conversa com você em breve.
+  - review missing_fact 'pix': the answer that is in the knowledge is missing
+  - review over_escalation '': handed to a person a question the knowledge answers
+  review:   rejected: The control was handed over instead of answered. The pack did not carry pricing.md (keyword selection: 'pagar' does not share a five letter stem with 'pagamento'). A selection limit, not an invented fact.
+
+[mismatch] en-pt-en#7 (expected en, owed a reply)
+  customer: 👍
+  sent:     👍 Obrigado! Qualquer dúvida, é só chamar.
+  - the reply is in pt, the customer wrote en
+  - the language field says pt, the customer wrote en
+  review:   (not reviewed yet)
+
+[mismatch] fixed-en#3 (expected en, owed a reply)
+  customer: Do you take Pix or credit cards? And do you deliver to Alto do Mirante?
+  sent:     Aceitamos Pix, cartão de débito e cartão de crédito. Sobre a entrega: sim, entregamos no bairro Alto do Mirante, em Vila Aurora. O frete é de R$ 15,00 por entrega. Para o prazo exato da sua entrega, uma pessoa da equipe vai continuar a conversa com você.
+  - the reply is in pt, the customer wrote en
+  - the language field says pt, the customer wrote en
+  review:   (not reviewed yet)

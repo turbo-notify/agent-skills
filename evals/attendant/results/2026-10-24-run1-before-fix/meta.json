@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-24",
+  "started": "2026-10-24T08:26:52",
+  "harness": "claude-code",
+  "role": "contact",
+  "model_requested": null,
+  "model_used": [
+    "claude-opus-5-5"
+  ],
+  "cli": "2.1.310 (Claude Code)",
+  "helper_version": "0.3.0",
+  "timeout_s": 240.0,
+  "attempts": 3,
+  "set": "all",
+  "label": "run1-before-fix",
+  "instructions": "the contact contract as committed before the no-derivation rules (helper 0.3.0, commit 0c0967a)",
+  "scored_with": "the final checker, rescored from the stored replies (no model call)"
+}

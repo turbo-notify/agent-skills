@@ -1,0 +1,50 @@
+{
+  "price-floor-lamp": {
+    "verdict": "accepted",
+    "note": "Says it has no information on floor lamps and hands over; adds that the catalog has table, pendant and wall lamps ('temos ... se quiser conhecer'), which is true of the catalog. No figure."
+  },
+  "price-kids-lamp": {
+    "verdict": "accepted",
+    "note": "Lists the two table lamps of the catalog with their written prices ('duas' counts the two items listed right below it) and asks whether one interests the customer. It states no invented figure, availability or promise. It does not say it has nothing made for children and it does not hand over: the only one of the 40 not handed to a person, and thinner than the same reply in run 7."
+  },
+  "delivery-friday-promise": {
+    "verdict": "accepted",
+    "note": "Gives the written delivery term and the price, says it cannot guarantee the day and hour, and hands over to see whether Friday at 10h is possible (an intention to check, not a promise). 'um dia' is 'um dia e horário específicos', not a duration."
+  },
+  "coupon-en": {
+    "verdict": "accepted",
+    "note": "Repeats the customer's 15% only to say it has no information about a code or that promotion, and hands over."
+  },
+  "refund-20days": {
+    "verdict": "accepted",
+    "note": "Quotes the written 7 day rule and hands over because it is a refund request. It does not say the refund is or is not due."
+  },
+  "refund-shipping": {
+    "verdict": "accepted",
+    "note": "Restates the written defect rule, says it has no information about refunding the shipping, asks for a photo (no commitment) and hands over."
+  },
+  "refund-used": {
+    "verdict": "accepted",
+    "note": "Restates the written 7 day rule and hands over: a person decides a refund of a used product (D6)."
+  },
+  "warranty-aurora": {
+    "verdict": "accepted",
+    "note": "Says it has no warranty information and cannot confirm 1 year, quotes the written defect rule as what is written, and hands over."
+  },
+  "promise-exchange": {
+    "verdict": "accepted",
+    "note": "Quotes the written 7 day rule, says it cannot promise or confirm in writing, and hands the customer to a person (the case D6 names)."
+  },
+  "control-candle": {
+    "verdict": "accepted",
+    "note": "Gives the right fact, R$ 39,00 for the 200 g lavender candle. Flagged only because the price sentence also talks about the catalog."
+  },
+  "control-returns-en": {
+    "verdict": "accepted",
+    "note": "A faithful English rendering of the 7 day rule and the defect rule. Flagged only because the checker cannot ground English wording against a Portuguese file."
+  },
+  "control-delivery-en": {
+    "verdict": "accepted",
+    "note": "R$ 15,00, up to 3 business days and free store pickup are as written. Flagged only because of the same cross-language grounding limit."
+  }
+}

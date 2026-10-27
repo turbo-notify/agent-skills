@@ -205,6 +205,65 @@ def test_invalid_decision_is_reported_not_applied(tmp_path: Path) -> None:
     assert status["leased"] is True  # still leased: the caller decides whether to retry
 
 
+def lease_a_message(tmp_path: Path, preview: str) -> dict[str, Any]:
+    init(tmp_path)
+    run(tmp_path, "cursor", "--set", "evt_" + "0" * 32)
+    event = f.inbound_text(preview=preview)
+    run(tmp_path, "ingest", "--file", write(tmp_path / "e.json", f.payload(event)), "--now", NOW)
+    _, leased = run(tmp_path, "next", "--kinds", "contact", "--now", NOW)
+    item = dict(leased["item"])
+    text = tmp_path / "text.txt"
+    text.write_text(preview)
+    for event_id in item["hydrate"]:  # the whole text, as the agent fetches it before the turn
+        run(tmp_path, "set-text", "--item", item["id"], "--event", event_id, "--file", str(text))
+    return item
+
+
+def test_the_pack_after_a_refused_decision_names_the_rule_that_broke(tmp_path: Path) -> None:
+    item = lease_a_message(tmp_path, "oi, quanto custa?")
+    _, first = run(tmp_path, "pack", "--item", item["id"], "--now", NOW)
+    assert "was refused" not in first["pack"]
+    bad = tmp_path / "bad.json"
+    bad.write_text('{"reply": "oi", "send_to": "5511999999999"}')
+    code, out = run(
+        tmp_path, "apply", "--item", item["id"], "--decision-file", str(bad), "--now", NOW
+    )
+    assert code == 1 and out["error"] == "invalid_decision"
+    assert "not in the format" in out["message"] and "5511999999999" not in out["message"]
+    _, second = run(tmp_path, "pack", "--item", item["id"], "--now", NOW)
+    last = second["pack"].rstrip().splitlines()[-1]
+    assert last.startswith(
+        "Your previous answer to this message was refused because it had a field"
+    )
+    assert (
+        "5511999999999" not in second["pack"].split("## New message")[-1].split("Answer with")[-1]
+    )
+
+
+def test_a_decision_that_says_nothing_is_applied_and_reported_as_silent(tmp_path: Path) -> None:
+    item = lease_a_message(tmp_path, "obrigado")
+    quiet = tmp_path / "quiet.json"
+    quiet.write_text('{"reply": null, "no_reply_needed": true}')
+    code, out = run(
+        tmp_path, "apply", "--item", item["id"], "--decision-file", str(quiet), "--now", NOW
+    )
+    assert code == 0 and out["deliveries"] == [] and out["silent"] is True
+    _, status = run(tmp_path, "next-status", "--item", item["id"])
+    assert status["leased"] is False  # the turn is finished
+
+
+def test_the_flag_on_a_question_is_not_silent_and_hands_the_customer_over(tmp_path: Path) -> None:
+    item = lease_a_message(tmp_path, "obrigado, e o frete?")
+    quiet = tmp_path / "quiet.json"
+    quiet.write_text('{"reply": null, "no_reply_needed": true}')
+    code, out = run(
+        tmp_path, "apply", "--item", item["id"], "--decision-file", str(quiet), "--now", NOW
+    )
+    assert code == 0 and out["silent"] is False
+    # assisted mode: the default hand-off is a draft for the people, with the notice of why
+    assert out["deliveries"] and all(op["to"] in (f.OWNER, f.CONNECTED) for op in out["deliveries"])
+
+
 def test_console_commands_run_without_a_model(tmp_path: Path) -> None:
     init(tmp_path)
     run(tmp_path, "cursor", "--set", "evt_" + "0" * 32)

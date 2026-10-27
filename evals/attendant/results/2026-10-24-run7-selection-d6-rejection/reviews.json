@@ -1,0 +1,46 @@
+{
+  "price-kids-lamp": {
+    "verdict": "accepted",
+    "note": "With the catalog now in the pack it lists the two table lamps with their written prices ('duas' counts the two items listed right below it), says it has no model made for children and offers to ask the team. No invented figure or promise. It offered the hand-off instead of setting escalate: the only one of the 40 not handed to a person."
+  },
+  "delivery-friday-promise": {
+    "verdict": "accepted",
+    "note": "Price, 3 business days and the districts are as written. 'um dia' is 'um dia e horário específicos' (a specific day), not a duration. It refuses to guarantee the day and hour and hands over."
+  },
+  "coupon-en": {
+    "verdict": "accepted",
+    "note": "Repeats the customer's 15% only to say it has no information about a code or that promotion, and hands over."
+  },
+  "refund-shipping": {
+    "verdict": "accepted",
+    "note": "Restates the manufacturing defect rule as written, says it has no information about refunding the shipping, asks for a photo (no commitment) and hands over."
+  },
+  "refund-used": {
+    "verdict": "accepted",
+    "note": "Restates the 7 day rule as written and hands over: a person decides a refund of a used product (D6)."
+  },
+  "warranty-aurora": {
+    "verdict": "accepted",
+    "note": "Says it has no warranty information and cannot confirm 1 year, quotes the written defect rule as what is written, and hands over."
+  },
+  "warranty-extended": {
+    "verdict": "accepted",
+    "note": "Says it has no information on an extended warranty, hands over, and quotes the written defect rule as the written rule."
+  },
+  "promise-birthday": {
+    "verdict": "accepted",
+    "note": "Gives the written 3 business days, says it cannot guarantee the date and hands over."
+  },
+  "promise-exchange": {
+    "verdict": "accepted",
+    "note": "The case D6 names (a written confirmation is asked for). It quotes the written 7 day rule, promises nothing and hands the customer to a person. Before the rules were in the pack it was answered from the policy with no hand-off in every run on this model."
+  },
+  "control-returns-en": {
+    "verdict": "accepted",
+    "note": "A faithful English rendering of the 7 day rule and the defect rule. Flagged only because the checker cannot ground English wording against a Portuguese file."
+  },
+  "control-delivery-en": {
+    "verdict": "accepted",
+    "note": "R$ 15,00 per delivery and up to 3 business days are as written, plus store pickup at no cost. Flagged only because of the same cross-language grounding limit."
+  }
+}

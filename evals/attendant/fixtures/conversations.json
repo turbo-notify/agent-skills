@@ -1,0 +1,218 @@
+[
+  {
+    "id": "pt-en-pt",
+    "name": "Adriana Lessa",
+    "number": "5511977790001",
+    "turns": [
+      {
+        "lang": "pt",
+        "message": "Oi, boa tarde! Vocês abrem no sábado?"
+      },
+      {
+        "lang": "pt",
+        "message": "E qual o endereço da loja?"
+      },
+      {
+        "lang": "en",
+        "message": "Thank you! I only speak English, sorry. How much is the Aurora lamp?"
+      },
+      {
+        "lang": "en",
+        "message": "And do you deliver to Vila Nova? How much is the shipping?"
+      },
+      {
+        "lang": "pt",
+        "message": "Entendi, obrigada! E se eu não gostar, como funciona a troca?"
+      },
+      {
+        "lang": "pt",
+        "message": "Perfeito, era só isso. Obrigada!",
+        "silent": true
+      }
+    ]
+  },
+  {
+    "id": "en-pt-en",
+    "name": "Nathan Rowe",
+    "number": "5511977790002",
+    "turns": [
+      {
+        "lang": "en",
+        "message": "Hi! What are your opening hours on Saturday?"
+      },
+      {
+        "lang": "en",
+        "message": "And where is the shop?"
+      },
+      {
+        "lang": "pt",
+        "message": "Desculpa, prefiro português. Quanto custa o difusor Brisa?"
+      },
+      {
+        "lang": "pt",
+        "message": "Vocês aceitam Pix?"
+      },
+      {
+        "lang": "en",
+        "message": "Great. Can I return the Aurora lamp if I don't like it?"
+      },
+      {
+        "lang": "en",
+        "message": "Thanks, that's all!",
+        "silent": true
+      },
+      {
+        "lang": "en",
+        "message": "👍",
+        "ambiguous": true,
+        "silent": true
+      }
+    ]
+  },
+  {
+    "id": "fixed-pt",
+    "name": "Sílvia Marques",
+    "number": "5511977790003",
+    "turns": [
+      {
+        "lang": "pt",
+        "message": "Bom dia! Vi o Pendente Lunar no Instagram e achei lindo. Quanto custa? Thanks!"
+      },
+      {
+        "lang": "pt",
+        "message": "E a lâmpada LED branca quente, vocês têm?"
+      },
+      {
+        "lang": "pt",
+        "message": "Entregam no Alto do Mirante? Aceita Pix?"
+      },
+      {
+        "lang": "pt",
+        "message": "Show, obrigado! Vou passar aí no sábado."
+      }
+    ]
+  },
+  {
+    "id": "fixed-en",
+    "name": "Oliver Marsh",
+    "number": "5511977790004",
+    "turns": [
+      {
+        "lang": "en",
+        "message": "Good morning! I saw the Pendente Lunar on Instagram and loved it. How much is it? Obrigada!"
+      },
+      {
+        "lang": "en",
+        "message": "Is the Casa Lumiar shop open on Saturday?"
+      },
+      {
+        "lang": "en",
+        "message": "Do you take Pix or credit cards? And do you deliver to Alto do Mirante?"
+      },
+      {
+        "lang": "en",
+        "message": "Awesome, thanks! I'll come by on Saturday."
+      }
+    ]
+  },
+  {
+    "id": "close-pt",
+    "name": "Yasmin Cavalcanti",
+    "number": "5511977790005",
+    "turns": [
+      {
+        "lang": "pt",
+        "message": "Oi! Vocês têm vela de lavanda? Quanto é?",
+        "must_include": [
+          "39"
+        ]
+      },
+      {
+        "lang": "pt",
+        "message": "Obrigada!",
+        "silent": true
+      },
+      {
+        "lang": "pt",
+        "message": "Ah, e vocês abrem no domingo?",
+        "must_include": [
+          "fechad"
+        ]
+      },
+      {
+        "lang": "pt",
+        "message": "👍",
+        "silent": true
+      }
+    ]
+  },
+  {
+    "id": "close-en",
+    "name": "Jonathan Pryce",
+    "number": "5511977790006",
+    "turns": [
+      {
+        "lang": "en",
+        "message": "Hi! How much is the lavender candle?",
+        "must_include": [
+          "39"
+        ]
+      },
+      {
+        "lang": "en",
+        "message": "ok, and how long does delivery take to Centro",
+        "must_include": [
+          "(3|three) (business |working )?days"
+        ]
+      },
+      {
+        "lang": "en",
+        "message": "Thanks a lot!",
+        "silent": true
+      },
+      {
+        "lang": "en",
+        "message": "One more thing: is the shop open on Sunday?",
+        "must_include": [
+          "closed"
+        ]
+      },
+      {
+        "lang": "en",
+        "message": "Perfect, thank you",
+        "silent": true
+      }
+    ]
+  },
+  {
+    "id": "ack-question",
+    "name": "Elaine Furtado",
+    "number": "5511977790007",
+    "turns": [
+      {
+        "lang": "pt",
+        "message": "Oi! Quanto custa a luminária de mesa Aurora?",
+        "must_include": [
+          "189"
+        ]
+      },
+      {
+        "lang": "pt",
+        "message": "ok, e o frete?",
+        "must_include": [
+          "15"
+        ]
+      },
+      {
+        "lang": "pt",
+        "message": "ok",
+        "silent": true
+      },
+      {
+        "lang": "pt",
+        "message": "valeu",
+        "silent": true
+      }
+    ]
+  }
+]

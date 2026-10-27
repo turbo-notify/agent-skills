@@ -10,12 +10,14 @@ from __future__ import annotations
 import difflib
 import json
 import re
+import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal, Union
 
+from tn_assist.closing import closes_conversation
 from tn_assist.config import load_config
 from tn_assist.egress import check_egress
 from tn_assist.i18n import t
@@ -39,11 +41,23 @@ Role = Literal["contact", "admin", "attendant"]
 Mode = Literal["auto", "assist"]
 MAX_REPLY_CHARS = 4000
 _FACT_KEY = re.compile(r"^[a-z0-9_]{1,40}$")
-_LANG = re.compile(r"^[a-z]{2,3}(-[A-Za-z]{2,4})?$")
-_CONTACT_KEYS = frozenset({"reply", "facts", "escalate", "language", "state", "quote"})
+_LANG = re.compile(r"^([a-z]{2,3})(-[A-Za-z]{2,4})?$", re.IGNORECASE)
+#: What a model writes when it names the language instead of giving its code.
+_LANGUAGE_NAMES = {
+    "english": "en", "ingles": "en", "portuguese": "pt", "portugues": "pt", "spanish": "es",
+    "espanol": "es", "espanhol": "es", "french": "fr", "frances": "fr", "francais": "fr",
+    "italian": "it", "italiano": "it", "german": "de", "alemao": "de", "deutsch": "de",
+}  # fmt: skip
+_CONTACT_KEYS = frozenset(
+    {"reply", "facts", "escalate", "language", "state", "quote", "no_reply_needed"}
+)
 _MESSAGE_ID = re.compile(r"^msg_[0-9a-f]{32}$")
 _CONSOLE_KEYS = frozenset({"reply", "command"})
 _URGENCY = ("low", "normal", "high")
+_BAD_FACT = (
+    'a fact had a "key" that is not lowercase letters, digits and underscores, '
+    'or a "value" that is not text'
+)
 LOOP_MIN_CHARS = 12
 LOOP_SIMILARITY = 0.95
 LOOP_WINDOW = timedelta(minutes=10)
@@ -53,7 +67,12 @@ CHAT_WINDOW = timedelta(hours=24)
 
 
 class InvalidDecision(ValueError):
-    """The model's answer is not an acceptable decision."""
+    """The model's answer is not an acceptable decision.
+
+    The message says which rule the answer broke and finishes the sentence "it was refused
+    because ...". It is written here, from fixed words: it is shown to the model on the second try
+    and kept in the log, so it never carries the customer's text or the model's own.
+    """
 
 
 @dataclass(frozen=True)
@@ -78,6 +97,9 @@ class Decision:
     state: str | None = None
     command: str | None = None
     quote: str | None = None
+    #: The model says the customer only closed the conversation. Honoured only behind
+    #: ``closing.closes_conversation``; without it, a reply of null still hands the customer over.
+    no_reply_needed: bool = False
 
 
 @dataclass(frozen=True)
@@ -117,7 +139,14 @@ class Say:
     text: str
 
 
-Action = Union[Reply, Draft, NotifyAdmins, NotifySelfChat, Say]
+@dataclass(frozen=True)
+class Silent:
+    """A turn that was handled by saying nothing: the customer only closed the conversation."""
+
+    contact: str
+
+
+Action = Union[Reply, Draft, NotifyAdmins, NotifySelfChat, Say, Silent]
 Guard = Callable[[Action], Action]
 
 
@@ -129,43 +158,66 @@ def _extract_json(raw: str) -> Any:
     else:
         start, end = text.find("{"), text.rfind("}")
         if start == -1 or end <= start:
-            raise InvalidDecision("no JSON object")
+            raise InvalidDecision("it had no JSON object in it")
         text = text[start : end + 1]
     try:
         return json.loads(text)
     except json.JSONDecodeError as error:
-        raise InvalidDecision("not valid JSON") from error
+        raise InvalidDecision("it was not valid JSON") from error
 
 
 def _text(value: Any, name: str, limit: int) -> str | None:
     if value is None:
         return None
     if not isinstance(value, str) or len(value) > limit:
-        raise InvalidDecision(f"{name} must be a string up to {limit} characters")
+        raise InvalidDecision(f'"{name}" must be text of at most {limit} characters, or null')
     return value
+
+
+def _language(value: Any) -> str | None:
+    """The language code of a decision, or ``None``.
+
+    The field only chooses the language of the AI line and is stored for the administrators, so a
+    value that cannot be read must not cost the customer their answer (the same rule as ``quote``).
+    A code is kept (``pt``, ``pt-BR``), a language name is read as its code, and anything else is
+    dropped: free text is never stored.
+    """
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    match = _LANG.match(text)
+    if match:
+        return match.group(1).lower() + (match.group(2) or "")
+    folded = unicodedata.normalize("NFKD", text.lower())
+    word = "".join(ch for ch in folded if not unicodedata.combining(ch)).split()[:1]
+    return _LANGUAGE_NAMES.get(word[0].strip(".,;:()") if word else "")
 
 
 def parse_decision(role: Role, raw: str) -> Decision:
     data = _extract_json(raw)
     if not isinstance(data, dict):
-        raise InvalidDecision("decision must be an object")
+        raise InvalidDecision("it was not a single JSON object")
     allowed = _CONTACT_KEYS if role == "contact" else _CONSOLE_KEYS
-    unknown = set(data) - allowed
-    if unknown:
-        raise InvalidDecision(f"unknown keys: {sorted(unknown)}")
+    if set(data) - allowed:
+        # the field names the model used are not repeated: only the ones that are allowed
+        raise InvalidDecision(
+            "it had a field that is not in the format (the fields are "
+            + ", ".join(sorted(allowed))
+            + ")"
+        )
     reply = _text(data.get("reply"), "reply", MAX_REPLY_CHARS)
     if role != "contact":
         return Decision(reply=reply, command=_text(data.get("command"), "command", 500))
     facts_raw = data.get("facts", [])
     if not isinstance(facts_raw, list):
-        raise InvalidDecision("facts must be a list")
+        raise InvalidDecision('"facts" must be a list')
     facts = []
     for entry in facts_raw:
         if not isinstance(entry, dict) or set(entry) != {"key", "value"}:
-            raise InvalidDecision("each fact needs a key and a value")
+            raise InvalidDecision('each item of "facts" must have exactly a "key" and a "value"')
         key, value = entry["key"], entry["value"]
         if not isinstance(key, str) or not _FACT_KEY.match(key) or not isinstance(value, str):
-            raise InvalidDecision("bad fact")
+            raise InvalidDecision(_BAD_FACT)
         if key.startswith("note_"):
             continue  # notes are the team's: a customer's words must not pose as one
         facts.append(DecisionFact(key, clean_fact_value(value)))
@@ -173,25 +225,33 @@ def parse_decision(role: Role, raw: str) -> Decision:
     if data.get("escalate") is not None:
         raw_esc = data["escalate"]
         if not isinstance(raw_esc, dict) or set(raw_esc) != {"reason", "summary", "urgency"}:
-            raise InvalidDecision("bad escalation")
+            raise InvalidDecision(
+                '"escalate" must be null or an object with exactly "reason", "summary" and '
+                '"urgency"'
+            )
         urgency = raw_esc["urgency"]
         if urgency not in _URGENCY:
-            raise InvalidDecision("bad urgency")
+            raise InvalidDecision('"urgency" must be "low", "normal" or "high"')
         escalation = Escalation(
             _text(raw_esc["reason"], "reason", 300) or "",
             _text(raw_esc["summary"], "summary", 600) or "",
             urgency,
         )
-    language = data.get("language")
-    if language is not None and (not isinstance(language, str) or not _LANG.match(language)):
-        raise InvalidDecision("bad language")
+    language = _language(data.get("language"))
     state = data.get("state")
     if state not in (None, "do_not_contact"):
-        raise InvalidDecision("state can only be do_not_contact")
+        raise InvalidDecision('"state" must be null or "do_not_contact"')
     quote = data.get("quote")
     if not isinstance(quote, str) or not _MESSAGE_ID.match(quote):
         quote = None  # a quote is a nicety: a bad id means a plain message, not a failed turn
-    return Decision(reply, tuple(facts), escalation, language, state, quote=quote)
+    silent = data.get("no_reply_needed")
+    if silent is not None and not isinstance(silent, bool):
+        raise InvalidDecision('"no_reply_needed" must be true, false or null')
+    if reply is not None and not reply.strip():
+        reply = None  # an empty reply is no reply: silence is only ever asked for in words
+    return Decision(
+        reply, tuple(facts), escalation, language, state, quote=quote, no_reply_needed=bool(silent)
+    )
 
 
 @dataclass(frozen=True)
@@ -203,26 +263,26 @@ class Compaction:
 def parse_compaction(raw: str) -> Compaction:
     data = _extract_json(raw)
     if not isinstance(data, dict) or set(data) - {"summary", "facts"} or "summary" not in data:
-        raise InvalidDecision("a compaction has a summary and optional facts")
+        raise InvalidDecision('it must be an object with a "summary" and, optionally, "facts"')
     summary = _text(data["summary"], "summary", 2000)
     if not summary or not summary.strip():
-        raise InvalidDecision("empty summary")
+        raise InvalidDecision("the summary was empty")
     facts_raw = data.get("facts", [])
     if not isinstance(facts_raw, list):
-        raise InvalidDecision("facts must be a list")
+        raise InvalidDecision('"facts" must be a list')
     facts = []
     for entry in facts_raw:
         if not isinstance(entry, dict) or set(entry) != {"key", "value"}:
-            raise InvalidDecision("each fact needs a key and a value")
+            raise InvalidDecision('each item of "facts" must have exactly a "key" and a "value"')
         key, value = entry["key"], entry["value"]
         if not isinstance(key, str) or not _FACT_KEY.match(key) or not isinstance(value, str):
-            raise InvalidDecision("bad fact")
+            raise InvalidDecision(_BAD_FACT)
         if key.startswith("note_"):
             continue
         facts.append(DecisionFact(key, clean_fact_value(value)))
     cleaned = clean_summary(summary)
     if not cleaned:
-        raise InvalidDecision("empty summary")
+        raise InvalidDecision("the summary was empty")
     return Compaction(cleaned, tuple(facts))
 
 
@@ -308,6 +368,22 @@ def open_escalations(ws: Workspace) -> list[dict[str, Any]]:
 
 def _lang(ws: Workspace) -> Literal["pt", "en"]:
     return "en" if load_config(ws).get("lang") == "en" else "pt"
+
+
+def customer_lang(ws: Workspace, key: ContactKey) -> Literal["pt", "en"]:
+    """The language for a text the helper writes to this customer.
+
+    The model reports the language of each reply and trusted code keeps it. The AI line, and a
+    hand-off or an opt-out confirmation the model left out, follow it, so an English customer of a
+    Portuguese business is not answered in Portuguese. A customer whose language is neither gets
+    the language of the workspace.
+    """
+    spoken = (load_state(ws, key).language or "").lower()
+    if spoken.startswith("pt"):
+        return "pt"
+    if spoken.startswith("en"):
+        return "en"
+    return _lang(ws)
 
 
 def _display_name(ws: Workspace, key: ContactKey) -> str:
@@ -545,8 +621,7 @@ class _Context:
         Trusted code adds it, never the model: a decision cannot leave it out, and the egress
         check has already passed the text it precedes.
         """
-        lang = load_state(self.ws, self.key).language or ""
-        notice = t("ai_disclosure", "en" if lang.lower().startswith("en") else _lang(self.ws))
+        notice = t("ai_disclosure", customer_lang(self.ws, self.key))
         return f"{notice}\n\n{text}"
 
     def _emit(self, text: str, *, blocked: bool = False, disclose: bool = True) -> None:
@@ -589,7 +664,7 @@ class _Context:
         if self.mode == "assist":
             self._emit(t("blocked_draft", lang, why=why), blocked=True)
         else:
-            self._emit(t("handoff_default", lang))
+            self._emit(t("handoff_default", customer_lang(self.ws, self.key)))
         reason = t("reason_reply_blocked", lang, why=why)
         self.out += _open_escalation(
             self.ws,
@@ -598,6 +673,24 @@ class _Context:
             self.now,
             load_state(self.ws, self.key),
         )
+
+
+def _unanswered_texts(ws: Workspace, key: ContactKey, item: WorkItem) -> list[str]:
+    """What the customer wrote in the messages this turn answers, as stored.
+
+    Nothing when any of them was not read in full (the platform sends only a short preview, and
+    a message that could no longer be fetched stays a preview): a guard that decides on a cut-off
+    text decides on less than the customer wrote.
+    """
+    wanted = set(item.event_ids)
+    lines = [
+        ln
+        for ln in read_lines(ws, key)
+        if ln.event_id in wanted and ln.role == "contact" and ln.kind == "message"
+    ]
+    if any(ln.truncated or not ln.hydrated for ln in lines):
+        return []
+    return [ln.text or "" for ln in lines]
 
 
 def _count(ws: Workspace, name: str) -> None:
@@ -639,6 +732,22 @@ def apply_contact_decision(
     policy = Policy.load(ws)
     lang = _lang(ws)
 
+    # Saying nothing is an explicit decision of the model, honoured only when the customer's words
+    # allow it (closing.py). Nothing is sent, so the reply caps and the loop guard have nothing to
+    # protect, and the turn is handled: the item is completed and the customer stays active.
+    silence = (
+        decision.no_reply_needed
+        and decision.reply is None
+        and decision.escalate is None
+        and decision.state is None
+    )
+    if silence and closes_conversation(_unanswered_texts(ws, key, item)):
+        if decision.language:
+            save_state(ws, key, replace(record, language=decision.language))
+        _remember(ws, key, decision, now)
+        _count(ws, "silenced")
+        return [Silent(str(key))]
+
     if _looks_like_loop(ws, key):
         return _pause(ws, key, "repeated_messages", now, record)
 
@@ -655,7 +764,9 @@ def apply_contact_decision(
 
     escalation = decision.escalate
     if escalation is None and decision.reply is None and decision.state is None:
-        escalation = Escalation(t("reason_empty_decision", lang), "", "normal")
+        # a reply of null hands the customer over; so does a silence the words did not allow
+        reason = "reason_silence_refused" if silence else "reason_empty_decision"
+        escalation = Escalation(t(reason, lang), "", "normal")
 
     if decision.state == "do_not_contact":
         save_state(
@@ -666,13 +777,13 @@ def apply_contact_decision(
         drop_drafts_for(ws, str(key))  # nothing prepared before the opt-out may go out afterwards
         drop_outbox_for(ws, str(key))  # nor a reply that was queued but not yet delivered
         # the customer asked for silence: a confirmation, not a chat to introduce ourselves in
-        ctx.say(decision.reply or t("dnc_default", lang), disclose=False)
+        ctx.say(decision.reply or t("dnc_default", customer_lang(ws, key)), disclose=False)
         if not ctx.blocked:
             _remember(ws, key, decision, now)
         return ctx.out
 
     if escalation is not None:
-        ctx.say(decision.reply or t("handoff_default", lang))
+        ctx.say(decision.reply or t("handoff_default", customer_lang(ws, key)))
         if not ctx.blocked:
             _remember(ws, key, decision, now)
             ctx.out += _open_escalation(ws, key, escalation, now, load_state(ws, key))
