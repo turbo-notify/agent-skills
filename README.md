@@ -1,7 +1,8 @@
 # Turbo Notify Agent Skills
 
 Skills that put the [Turbo Notify MCP server](https://docs.turbonotify.com/general/mcp-server/) to work
-inside your AI agent: Claude Code, Claude Desktop and Cowork, Codex and the Antigravity CLI.
+inside your AI agent: Claude Code, Claude Desktop and Cowork, Codex and the Antigravity CLI, and any other
+agent that reads the Agent Skills format.
 
 ## Skills
 
@@ -20,10 +21,18 @@ and [Agent skills](https://docs.turbonotify.com/en/general/skills/).
 | Claude Desktop and Cowork | Customize, Plugins, Add, Add marketplace, Add from a repository: `turbo-notify/agent-skills`; then Discover, `turbo-notify`, Add |
 | Codex | `codex plugin marketplace add turbo-notify/agent-skills --ref v1` then `codex plugin add turbo-notify@turbo-notify` |
 | Antigravity | `agy plugin install https://github.com/turbo-notify/agent-skills` |
+| Hermes Agent | `hermes skills install turbo-notify/agent-skills/skills/virtual-attendant`, then add the MCP server `https://mcp.turbonotify.com` in Hermes |
+| Other agents that read the Agent Skills format (OpenCode, Cursor, Copilot and more) | `npx skills add turbo-notify/agent-skills`, then add the MCP server `https://mcp.turbonotify.com` in that agent's own settings |
+
+The unattended runner exists for Claude Code and Codex only. In the other agents the attendant runs in
+assisted mode: a session you keep open, where a person approves each draft.
 
 `#v1` and `--ref v1` keep you on 1.x: a release that breaks compatibility never arrives by itself.
-Then connect the Turbo Notify MCP server to the same agent and ask it to "set up the Turbo Notify
-virtual attendant".
+The plugin rows above already declare the Turbo Notify MCP server (`https://mcp.turbonotify.com`), so
+there is nothing to add. Sign in with your Turbo Notify account the first time the agent uses it (Claude Code:
+`/mcp`; Codex: `codex mcp login turbo-notify`; Antigravity: Agent settings, Customizations, Authenticate next to the server), then ask it to "set up the
+Turbo Notify virtual attendant". No account yet? Create one at https://dashboard.turbonotify.com/auth/signup?locale=en. For anything
+that runs alone, use an API key instead (see the guide for your agent in `skills/virtual-attendant/references/`).
 
 ## Update
 
@@ -39,8 +48,9 @@ with the command for the agent in use.
 
 ## What it reaches
 
-- The Turbo Notify MCP server you connected, with your account or API key permissions.
-- One folder on your computer (by default `~/.turbo-notify/attendant`) holding conversations, customer files and what you taught. Turbo Notify gets no copy.
+- The Turbo Notify MCP server at `https://mcp.turbonotify.com`, which the plugin declares in `.mcp.json`, `mcp.json` and `mcp_config.json` (one file for each family of agents; none holds a key or a header). You sign in with your account, or you connect your own with an API key. It runs with your account or API key permissions.
+- One folder on your computer (by default `~/.turbo-notify/attendant`) holding, for each customer, the conversation (kept 90 days by default, then deleted), short summaries of older parts of it, and a file with the facts that customer gave (name, preferences, what they asked for), plus what you taught. Turbo Notify gets no copy. `/forget` erases one customer's data, and the retention is a number you can change in `memory-policy.json`.
+- The Turbo Notify API at `https://api.turbonotify.com`, called by the helper with your API key when the unattended runner or a console command sends a message.
 - One network address besides Turbo Notify: `raw.githubusercontent.com/turbo-notify/agent-skills/main/latest.json`, read about once an hour (and again after 10 minutes if a check fails) for the version check. A failure changes nothing.
 - Your other MCP servers only if you allow each one during setup.
 
@@ -49,6 +59,7 @@ with the command for the agent in use.
 - It runs the `tn_assist` helper with `python3`. The helper uses only the standard library and installs nothing.
 - In the unattended runner (Claude Code and Codex), it starts your own `claude` or `codex` command once per customer, in a separate process with no tools, to write that customer's answer. The process gets that customer's messages, their file and the business knowledge that matches the message (the company, tone and hand-off files, plus up to three more picked by the words of the message), and nothing else.
 - The text of a customer's message goes to the model of the agent you use, under your account with that agent. It goes nowhere else.
+- The unattended runner reads your API key from the `TURBO_NOTIFY_API_KEY` variable you set for it and sends it only to `api.turbonotify.com`, as the sign-in of each request. It is never passed to the process that writes a customer's answer.
 - Answers go out through the Turbo Notify API with your API key, to the customer who wrote. A check before every send stops another customer's number or name, non-public text and credentials.
 - The first answer of each chat tells the customer that it comes from an AI. The line is added by the helper, not by the model.
 - A customer who only says thanks, "ok" or sends a thumbs up gets no answer and is not handed to a person. The model has to ask for that, and the helper agrees only when the message is nothing but a thanks or an acknowledgement (no question mark, no number, a few words from a fixed list). Anything more is answered, or goes to a person.
@@ -60,6 +71,10 @@ with the command for the agent in use.
 ```
 .claude-plugin/        plugin and marketplace manifests (Claude Code, Codex)
 plugin.json            manifest for Antigravity
+.mcp.json              the Turbo Notify MCP server, as Claude Code, Claude Desktop, Cowork and Codex read it
+mcp.json               the same server, as the Agent Plugins format reads it (Copilot, Cursor)
+mcp_config.json        the same server, as Antigravity reads it
+assets/icon.png        the plugin icon
 agents/                the tool-less agent that answers a customer
 skills/virtual-attendant/
   SKILL.md             the entry point the agent reads

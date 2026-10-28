@@ -256,6 +256,19 @@ def test_quota_error_notifies_once_per_cause_and_cycle(tmp_path: Path) -> None: 
     assert again == [] and kinds(next_cycle) == ["NotifyAdmins", "NotifySelfChat"] and other
 
 
+def test_a_known_quota_cause_is_explained_and_keeps_the_code(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    text = report_failure(ws, "contact_quota_exceeded", "2026-10", T0)[0].text
+    assert "contact_quota_exceeded" in text
+    assert "limit" in text.lower() or "limite" in text.lower()
+    assert "upgrade" not in text.lower()
+
+
+def test_an_unknown_failure_cause_is_still_shown_as_the_code(tmp_path: Path) -> None:
+    ws = make_workspace(tmp_path)
+    assert "something_new" in report_failure(ws, "something_new", "2026-10", T0)[0].text
+
+
 def test_unknown_key_is_rejected() -> None:
     with pytest.raises(InvalidDecision):
         parse_decision("contact", '{"reply": "oi", "send_to": "5511999999999"}')

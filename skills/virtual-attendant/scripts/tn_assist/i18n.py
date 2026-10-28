@@ -125,6 +125,26 @@ STRINGS: dict[str, dict[str, str]] = {
         "pt": "Não consegui enviar mensagens: {cause}. Tentar de novo agora não adianta.",
         "en": "I could not send messages: {cause}. Trying again now will not help.",
     },
+    "cause_contact_quota_exceeded": {
+        "pt": "o limite de contatos diferentes do plano neste ciclo foi atingido",
+        "en": "the plan's limit of different contacts for this billing cycle was reached",
+    },
+    "cause_messages_quota_exceeded": {
+        "pt": "o limite de mensagens do plano neste ciclo foi atingido",
+        "en": "the plan's message limit for this billing cycle was reached",
+    },
+    "cause_payment_required": {
+        "pt": "há um pagamento pendente na conta",
+        "en": "the account has a payment pending",
+    },
+    "cause_feature_not_available": {
+        "pt": "este recurso não está incluído no plano",
+        "en": "this feature is not included in the plan",
+    },
+    "cause_insufficient_scope": {
+        "pt": "a chave não tem permissão para enviar mensagens",
+        "en": "the key does not have permission to send messages",
+    },
     "reason_repeated_messages": {
         "pt": "as mensagens se repetem, como as de um robô",
         "en": "the messages repeat, like a bot's",

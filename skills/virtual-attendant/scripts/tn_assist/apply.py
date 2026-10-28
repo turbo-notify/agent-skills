@@ -20,7 +20,7 @@ from typing import Any, Literal, Union
 from tn_assist.closing import closes_conversation
 from tn_assist.config import load_config
 from tn_assist.egress import check_egress
-from tn_assist.i18n import t
+from tn_assist.i18n import STRINGS, t
 from tn_assist.memory import (
     AUTO_RESUME_MIN_MINUTES,
     Card,
@@ -570,7 +570,10 @@ def report_failure(ws: Workspace, cause: str, cycle: str, now: datetime) -> list
         return []
     data[cause] = cycle
     write_json_atomic(ws.path("failures.json"), data)
-    return _notices(t("send_failure_notice", _lang(ws), cause=cause))
+    lang = _lang(ws)
+    key = f"cause_{cause}"
+    shown = f"{t(key, lang)} ({cause})" if key in STRINGS else cause
+    return _notices(t("send_failure_notice", lang, cause=shown))
 
 
 # --- applying a contact decision --------------------------------------------------------

@@ -1,8 +1,9 @@
 """Keeps the version and the manifests in agreement.
 
 ``VERSION`` is the single source. ``sync`` writes it into the three manifests and ``latest.json``;
-``check`` fails (exit 1) on any disagreement, a missing changelog entry, or a manifest whose name or
-skills path drifted. Run ``check`` before every release and in the tests.
+``check`` fails (exit 1) on any disagreement, a missing changelog entry, a manifest whose name or
+skills path drifted, or an MCP file that stopped pointing at the Turbo Notify server. Run ``check``
+before every release and in the tests.
 """
 
 from __future__ import annotations
@@ -18,6 +19,27 @@ NAME = "turbo-notify"
 SKILLS = "./skills"
 _SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 HELPER_INIT = "skills/virtual-attendant/scripts/tn_assist/__init__.py"
+MCP_URL = "https://mcp.turbonotify.com"
+# One file per family of harnesses, each in the shape that family reads, the key that holds the
+# address in that shape, and the only keys the server entry may have. The plugin ships the sign-in
+# connection only: a key not on this list (a header, a token, a client secret) fails the check.
+MCP_FILES = (
+    (
+        ".mcp.json",
+        "url",
+    ),  # Claude Code, Claude Desktop and Cowork, and Codex (it reads this one too)
+    (
+        "mcp.json",
+        "url",
+    ),  # the Agent Plugins format (Copilot, Cursor) and the OpenAI directory upload
+    ("mcp_config.json", "serverUrl"),  # Antigravity
+)
+MCP_ALLOWED_KEYS = {
+    ".mcp.json": {"type", "url"},
+    "mcp.json": {"type", "url", "extensions"},
+    "mcp_config.json": {"serverUrl"},
+}
+MCP_ALLOWED_AUTH = {"type": "oauth", "client": {"mode": "dcr"}}
 # (file, pattern with the version in group 2) for the two places that carry a copy of the version
 _COPIES = (
     (
@@ -48,6 +70,32 @@ def version() -> str:
     if not _SEMVER.match(text):
         raise SystemExit(f"VERSION is not MAJOR.MINOR.PATCH: {text!r}")
     return text
+
+
+def _mcp_problems() -> list[str]:
+    found: list[str] = []
+    for path, key in MCP_FILES:
+        if not (ROOT / path).is_file():
+            found.append(f"{path} is missing")
+            continue
+        servers = _read(path).get("mcpServers", {})
+        if list(servers) != [NAME]:
+            found.append(f"{path} must declare only the server {NAME}, it has {sorted(servers)}")
+            continue
+        server = servers[NAME]
+        if server.get(key) != MCP_URL:
+            found.append(f"{path} {key} is {server.get(key)}, expected {MCP_URL}")
+        extra = sorted(set(server) - MCP_ALLOWED_KEYS[path])
+        if extra:
+            found.append(
+                f"{path} has fields {extra} that the plugin may not ship; it signs in with OAuth"
+            )
+        auth = server.get("extensions", {}).get("com.openai", {}).get("auth")
+        if "extensions" in server and (
+            set(server["extensions"]) != {"com.openai"} or auth != MCP_ALLOWED_AUTH
+        ):
+            found.append(f"{path} extensions may only ask for OAuth with dynamic registration")
+    return found
 
 
 def problems() -> list[str]:
@@ -83,6 +131,7 @@ def problems() -> list[str]:
         value = match.group(2) if match else "missing"
         if value != ver:
             found.append(f"{label} is {value}, VERSION is {ver}")
+    found.extend(_mcp_problems())
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     if not re.search(rf"^## {re.escape(ver)}\b", changelog, re.MULTILINE):
         found.append(f"CHANGELOG.md has no section for {ver}")

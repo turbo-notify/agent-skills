@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "turbo-notify": {
+      "type": "streamable-http",
+      "url": "https://mcp.turbonotify.com",
+      "extensions": {
+        "com.openai": {
+          "auth": { "type": "oauth", "client": { "mode": "dcr" } }
+        }
+      }
+    }
+  }
+}

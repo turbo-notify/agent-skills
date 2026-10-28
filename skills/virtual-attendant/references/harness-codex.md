@@ -16,6 +16,10 @@ codex plugin marketplace upgrade
 codex plugin add turbo-notify@turbo-notify
 ```
 
+## Connect Turbo Notify
+
+The plugin already declares the server (`.mcp.json`). Check it with `codex mcp list` and sign in with `codex mcp login turbo-notify`. The unattended mode below uses an API key instead.
+
 ## Unattended (recommended)
 
 ```

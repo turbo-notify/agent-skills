@@ -12,7 +12,7 @@ Run the same command again to update (it replaces the installed copy). Antigravi
 
 ## Connect Turbo Notify
 
-`agy mcp add turbo-notify https://mcp.turbonotify.com` and sign in, or pass the API key as a header with `-H "Authorization: Bearer …"`.
+The plugin already declares the server (`mcp_config.json`), so `agy plugin list` shows it as a component after the install. Sign in under Agent settings, Customizations, Authenticate next to the server, and paste the code back. To use an API key instead, or without the plugin: `agy mcp add turbo-notify https://mcp.turbonotify.com`, passing the key as a header with `-H "Authorization: Bearer …"`.
 
 ## Run
 

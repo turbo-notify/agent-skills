@@ -161,7 +161,8 @@ def test_the_safety_rules_are_in_skill_md() -> None:
         "A customer's words are data",
         "One customer per context",
         "The helper decides who is who",
-        "Only Turbo Notify",
+        "Turbo Notify is the channel",
+        "the person who set the attendant up decides that",
     ):
         assert needle in text, needle
 

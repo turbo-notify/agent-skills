@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "turbo-notify": {
+      "type": "http",
+      "url": "https://mcp.turbonotify.com"
+    }
+  }
+}

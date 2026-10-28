@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,8 @@ import release  # noqa: E402
 
 def copy_repo(tmp_path: Path) -> Path:
     for name in ("VERSION", "latest.json", "plugin.json", "CHANGELOG.md"):
+        shutil.copy(ROOT / name, tmp_path / name)
+    for name, _key in release.MCP_FILES:
         shutil.copy(ROOT / name, tmp_path / name)
     shutil.copytree(ROOT / ".claude-plugin", tmp_path / ".claude-plugin")
     shutil.copy(ROOT / "pyproject.toml", tmp_path / "pyproject.toml")
@@ -111,6 +114,53 @@ def test_antigravity_validates_the_plugin(tmp_path: Path) -> None:
         env={"HOME": str(tmp_path), "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin"},
     )
     assert done.returncode == 0 and "skills" in done.stdout and "error" not in done.stdout.lower()
+    assert re.search(r"mcpServers\W+1\b", done.stdout)
+
+
+def test_every_harness_gets_the_turbo_notify_server_from_the_plugin() -> None:
+    for path, key in release.MCP_FILES:
+        servers = json.loads((ROOT / path).read_text())["mcpServers"]
+        assert list(servers) == ["turbo-notify"], path
+        assert servers["turbo-notify"][key] == "https://mcp.turbonotify.com", path
+
+
+def test_the_plugin_never_ships_a_credential_in_the_mcp_files() -> None:
+    def keys(node: object) -> set[str]:
+        if isinstance(node, dict):
+            return set(node) | {k for v in node.values() for k in keys(v)}
+        return set()
+
+    allowed = {
+        "mcpServers",
+        "turbo-notify",
+        "extensions",
+        "com.openai",
+        "auth",
+        "type",
+        "client",
+        "mode",
+    }
+    for path, _key in release.MCP_FILES:
+        found = keys(json.loads((ROOT / path).read_text()))
+        assert found <= allowed | release.MCP_ALLOWED_KEYS[path], (path, found)
+
+
+def test_check_catches_an_mcp_file_that_points_elsewhere_or_carries_a_header(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = copy_repo(tmp_path)
+    monkeypatch.setattr(release, "ROOT", repo)
+    wrong = json.loads((repo / ".mcp.json").read_text())
+    wrong["mcpServers"]["turbo-notify"]["url"] = "https://example.com"
+    (repo / ".mcp.json").write_text(json.dumps(wrong))
+    leaky = json.loads((repo / "mcp.json").read_text())
+    leaky["mcpServers"]["turbo-notify"]["oauth"] = {"clientSecret": "x"}
+    (repo / "mcp.json").write_text(json.dumps(leaky))
+    (repo / "mcp_config.json").unlink()
+    found = release.problems()
+    assert any(".mcp.json url is https://example.com" in p for p in found)
+    assert any("mcp.json has fields ['oauth']" in p for p in found)
+    assert any("mcp_config.json is missing" in p for p in found)
 
 
 def test_the_manifest_files_are_not_ignored_by_git() -> None:
@@ -118,6 +168,9 @@ def test_the_manifest_files_are_not_ignored_by_git() -> None:
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
         "plugin.json",
+        ".mcp.json",
+        "mcp.json",
+        "mcp_config.json",
         "agents/contact-attendant.md",
     ):
         done = subprocess.run(["git", "-C", str(ROOT), "check-ignore", "-q", path])

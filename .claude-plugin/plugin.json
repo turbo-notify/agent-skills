@@ -12,5 +12,12 @@
     "mcp",
     "customer-service"
   ],
+  "homepage": "https://docs.turbonotify.com/en/general/skills/",
+  "repository": "https://github.com/turbo-notify/agent-skills",
+  "icon": "./assets/icon.png",
+  "documentationUrl": "https://docs.turbonotify.com/en/guides/virtual-attendant/",
+  "privacyPolicyUrl": "https://turbonotify.com/en/legal/privacy-policy",
+  "termsOfServiceUrl": "https://turbonotify.com/en/legal/terms-of-service",
+  "supportUrl": "https://docs.turbonotify.com/en/help/support/",
   "skills": "./skills"
 }

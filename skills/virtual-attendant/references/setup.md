@@ -13,7 +13,7 @@ Run this once per number, in a conversation with the person setting it up (the c
 - The business name, as customers know it.
 - The language for the people who run it: Portuguese (`pt`) or English (`en`).
 - "Is it just you?" If yes, this person will be administrator and attendant too. If not, ask who the administrators are (numbers with area code) and tell them the attendants need no registration: they use the phone or WhatsApp Web of the connected number.
-- Which number to use. Show the result of `list_numbers` (alias, number, status) and let them choose. Keep the number's `id` (`num_…`) and its digits.
+- Which number to use. Show the result of `list_numbers` (alias, number, status) and let them choose. Keep the number's `id` (`num_…`) and its digits. If the list has no connected number (a new account), stop here: a number is paired in the Turbo Notify dashboard, with the phone at hand, and the MCP tools cannot do it. Tell the person to pair one there (the guide "Quickstart" on the Turbo Notify documentation site, step "Connect your main number"), and to come back when it shows as connected.
 
 ## 3. Find the organization id
 

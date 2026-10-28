@@ -13,7 +13,7 @@ claude plugin install turbo-notify@turbo-notify
 
 ## Connect Turbo Notify
 
-- To sign in with your account: `claude mcp add --transport http turbo-notify https://mcp.turbonotify.com` and then `/mcp`.
+- To sign in with your account: the plugin already declares the server, so type `/mcp`, pick `turbo-notify` and sign in. A server you added by hand with the same name or address keeps priority over the plugin's. Without the plugin (a copy of the skill alone): `claude mcp add --transport http turbo-notify https://mcp.turbonotify.com` and then `/mcp`.
 - For anything that runs alone, use an API key made with the **AI agent (MCP)** template (the dashboard page "API Keys"). The key is a company-wide credential: treat it as a password.
 
 ## Unattended (recommended)

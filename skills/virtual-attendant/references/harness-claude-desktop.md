@@ -14,7 +14,7 @@ Each cycle also checks the version and tells the administrators when a new one e
 
 ## Connect Turbo Notify
 
-Add the connector with the address `https://mcp.turbonotify.com` and sign in with your Turbo Notify account (or use an API key header, as the Turbo Notify guide "MCP server" explains).
+The plugin declares the Turbo Notify server, so it should appear among your connectors once the plugin is added: connect it and sign in. If it does not appear, add the connector yourself with the address `https://mcp.turbonotify.com` and sign in with your Turbo Notify account (or use an API key header, as the Turbo Notify guide "MCP server" explains).
 
 ## Needs a folder
 
