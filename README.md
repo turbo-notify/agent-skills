@@ -1,6 +1,6 @@
 # Turbo Notify Agent Skills
 
-Skills that put the [Turbo Notify MCP server](https://docs.turbonotify.com/general/mcp-server/) to work
+Skills that put the [Turbo Notify MCP server](https://docs.turbonotify.com/integrations/mcp-server/) to work
 inside your AI agent: Claude Code, Claude Desktop and Cowork, Codex and the Antigravity CLI, and any other
 agent that reads the Agent Skills format.
 
@@ -10,8 +10,9 @@ agent that reads the Agent Skills format.
 |---|---|
 | `virtual-attendant` | Serves a business's customers on WhatsApp: answers in the customer's language, remembers each customer, calls a person when it should, and takes commands from administrators and attendants on WhatsApp itself. |
 
-Customer guides (Portuguese and English): [WhatsApp virtual attendant](https://docs.turbonotify.com/en/guides/virtual-attendant/)
-and [Agent skills](https://docs.turbonotify.com/en/general/skills/).
+Customer guides (Portuguese and English): [WhatsApp virtual attendant](https://docs.turbonotify.com/en/guides/virtual-attendant/),
+[Agent skills](https://docs.turbonotify.com/en/integrations/skills/) and
+[Integrations](https://docs.turbonotify.com/en/integrations/overview/), with one page per agent.
 
 ## Install
 
@@ -22,7 +23,8 @@ and [Agent skills](https://docs.turbonotify.com/en/general/skills/).
 | Codex | `codex plugin marketplace add turbo-notify/agent-skills --ref v1` then `codex plugin add turbo-notify@turbo-notify` |
 | Antigravity | `agy plugin install https://github.com/turbo-notify/agent-skills` |
 | Hermes Agent | `hermes skills install turbo-notify/agent-skills/skills/virtual-attendant`, then add the MCP server `https://mcp.turbonotify.com` in Hermes |
-| Other agents that read the Agent Skills format (OpenCode, Cursor, Copilot and more) | `npx skills add turbo-notify/agent-skills`, then add the MCP server `https://mcp.turbonotify.com` in that agent's own settings |
+| OpenCode | `npx skills add turbo-notify/agent-skills -a opencode` (project folder `.agents/skills/`, or `-g` for `~/.config/opencode/skills/`), then `opencode mcp add turbo-notify --url https://mcp.turbonotify.com` and `opencode mcp auth turbo-notify` to sign in. Guide: [Turbo Notify in OpenCode](https://docs.turbonotify.com/en/integrations/opencode/) |
+| Other agents that read the Agent Skills format (Cursor, Copilot and more) | `npx skills add turbo-notify/agent-skills`, then add the MCP server `https://mcp.turbonotify.com` in that agent's own settings |
 
 The unattended runner exists for Claude Code and Codex only. In the other agents the attendant runs in
 assisted mode: a session you keep open, where a person approves each draft.
