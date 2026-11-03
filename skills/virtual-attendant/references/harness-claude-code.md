@@ -5,11 +5,11 @@ Claude Code can run the attendant two ways: **unattended** (a program in a termi
 ## Install and keep it current
 
 ```
-claude plugin marketplace add turbo-notify/agent-skills#v1
+claude plugin marketplace add turbo-notify/agent-skills
 claude plugin install turbo-notify@turbo-notify
 ```
 
-`#v1` keeps you on the 1.x line: a change that breaks things (2.0) never arrives by itself. Third-party marketplaces do not update on their own. Turn it on in `/plugin`, tab **Marketplaces**, **Enable auto-update**, or pre-register the marketplace with `autoUpdate` set to true in the settings. Without it, the cycle tells the administrators when a new version exists and gives the two commands ([update.md](update.md)).
+Third-party marketplaces do not update on their own. Turn it on in `/plugin`, tab **Marketplaces**, **Enable auto-update**, or pre-register the marketplace with `autoUpdate` set to true in the settings. Without it, the cycle tells the administrators when a new version exists and gives the two commands ([update.md](update.md)).
 
 ## Connect Turbo Notify
 

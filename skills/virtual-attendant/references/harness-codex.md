@@ -5,11 +5,11 @@ Codex can run the attendant **unattended** (recommended) or in session in assist
 ## Install and keep it current
 
 ```
-codex plugin marketplace add turbo-notify/agent-skills --ref v1
+codex plugin marketplace add turbo-notify/agent-skills
 codex plugin add turbo-notify@turbo-notify
 ```
 
-`--ref v1` keeps you on the 1.x line. Codex does not update plugins on its own. Each cycle checks the version and tells the administrators when a new one exists; to update, run:
+Codex does not update plugins on its own. Each cycle checks the version and tells the administrators when a new one exists; to update, run:
 
 ```
 codex plugin marketplace upgrade

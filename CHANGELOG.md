@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Docs: the install commands for Claude Code and Codex no longer pin the `v1` tag. The default branch only receives releases, so an install from it already follows the latest stable version. The `v1` tag is still moved at each release for anyone who wants to stay on 1.x.
+
 ## 0.3.0
 
 - The plugin now declares the Turbo Notify MCP server itself (`https://mcp.turbonotify.com`), in the file each family of agents reads: `.mcp.json` (Claude Code, Claude Desktop and Cowork), `mcp.json` (the Agent Plugins format that Copilot and Cursor read, and the OpenAI directory upload; Codex reads `.mcp.json`) and `mcp_config.json` (Antigravity). Installing the plugin is enough to have the tools; you only sign in. The files hold no key and no header, and `tools/release.py check` fails if one points elsewhere, has a field it does not list or goes missing. A server you added by hand under the same name or address keeps priority over the one the plugin declares, so a copy added with an API key stays as it is.

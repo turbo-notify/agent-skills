@@ -18,18 +18,17 @@ Customer guides (Portuguese and English): [WhatsApp virtual attendant](https://d
 
 | Agent | Commands |
 |---|---|
-| Claude Code | `claude plugin marketplace add turbo-notify/agent-skills#v1` then `claude plugin install turbo-notify@turbo-notify` |
+| Claude Code | `claude plugin marketplace add turbo-notify/agent-skills` then `claude plugin install turbo-notify@turbo-notify` |
 | Claude Desktop and Cowork | Customize, Plugins, Add, Add marketplace, Add from a repository: `turbo-notify/agent-skills`; then Discover, `turbo-notify`, Add |
-| Codex | `codex plugin marketplace add turbo-notify/agent-skills --ref v1` then `codex plugin add turbo-notify@turbo-notify` |
+| Codex | `codex plugin marketplace add turbo-notify/agent-skills` then `codex plugin add turbo-notify@turbo-notify` |
 | Antigravity | `agy plugin install https://github.com/turbo-notify/agent-skills` |
 | Hermes Agent | `hermes skills install turbo-notify/agent-skills/skills/virtual-attendant`, then add the MCP server `https://mcp.turbonotify.com` in Hermes |
-| OpenCode | `npx skills add turbo-notify/agent-skills -a opencode` (project folder `.agents/skills/`, or `-g` for `~/.config/opencode/skills/`), then `opencode mcp add turbo-notify --url https://mcp.turbonotify.com` and `opencode mcp auth turbo-notify` to sign in. Guide: [Turbo Notify in OpenCode](https://docs.turbonotify.com/en/agents/opencode/) |
+| OpenCode | `npx skills add turbo-notify/agent-skills -a opencode` (project folder `.agents/skills/`, or `-g` for `~/.config/opencode/skills/`), then `opencode mcp add --global --url https://mcp.turbonotify.com turbo-notify` and `opencode mcp auth turbo-notify` to sign in. Guide: [Turbo Notify in OpenCode](https://docs.turbonotify.com/en/agents/opencode/) |
 | Other agents that read the Agent Skills format (Cursor, Copilot and more) | `npx skills add turbo-notify/agent-skills`, then add the MCP server `https://mcp.turbonotify.com` in that agent's own settings |
 
 The unattended runner exists for Claude Code and Codex only. In the other agents the attendant runs in
 assisted mode: a session you keep open, where a person approves each draft.
 
-`#v1` and `--ref v1` keep you on 1.x: a release that breaks compatibility never arrives by itself.
 The plugin rows above already declare the Turbo Notify MCP server (`https://mcp.turbonotify.com`), so
 there is nothing to add. Sign in with your Turbo Notify account the first time the agent uses it (Claude Code:
 `/mcp`; Codex: `codex mcp login turbo-notify`; Antigravity: Agent settings, Customizations, Authenticate next to the server), then ask it to "set up the
@@ -119,7 +118,7 @@ TN_EVALS_LIVE=1 poetry run pytest evals                 # the same, as tests (sk
 ```
 
 Releases bump `VERSION`, `latest.json`, the three manifests, the helper and pyproject versions and `CHANGELOG.md` together (`tools/release.py sync`),
-then move the `v1` tag.
+then move the `v1` tag, which stays available for anyone who wants to pin to 1.x (`...agent-skills#v1`, or `--ref v1` in Codex).
 
 ## License
 

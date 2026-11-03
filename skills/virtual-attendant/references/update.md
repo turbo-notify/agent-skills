@@ -11,7 +11,7 @@ The skill checks its own version on every cycle (`tn_assist version-check --anno
 | Codex | `codex plugin marketplace upgrade`, then `codex plugin add turbo-notify@turbo-notify`. |
 | Antigravity | `agy plugin install https://github.com/turbo-notify/agent-skills` again, over the installed one. |
 
-Install the moving tag `v1` (for example `turbo-notify/agent-skills#v1`) so that a change that breaks things (`v2`) never arrives by itself. The Antigravity install has no tag: it follows the latest stable version.
+Install from the repository without a tag: the default branch only receives releases, so every install follows the latest stable version. Anyone who wants to stay on 1.x can pin the moving tag `v1` (for example `turbo-notify/agent-skills#v1`).
 
 ## After an update
 
