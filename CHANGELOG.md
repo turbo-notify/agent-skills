@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix: when a send is refused with `number_not_connected`, the attendant now reads the number first. A number that is `reconnecting`, `disconnected` or `inactive` is waited for or brought back with `connect_number` and tried again next cycle, as before. A number that is `pending`, `failed` or `revoked` cannot be fixed by the assistant: it keeps the delivery, does not call `connect_number`, and tells the person who runs the assistant, in the conversation, that the number has to be linked in the Numbers page of the dashboard. Before, every such refusal was read as "reconnecting" and retried until the answer expired.
 - Docs: the install commands for Claude Code and Codex no longer pin the `v1` tag. The default branch only receives releases, so an install from it already follows the latest stable version. The `v1` tag is still moved at each release for anyone who wants to stay on 1.x.
 
 ## 0.3.0

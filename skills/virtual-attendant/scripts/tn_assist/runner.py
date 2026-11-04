@@ -107,7 +107,8 @@ def classify(error: ApiError) -> str:
     if error.code == "number_not_connected" or (
         error.status in (401, 403) and error.code != "insufficient_scope"
     ):
-        # heals on its own (a reconnect) or when the key is fixed: hold the answer, do not erase it
+        # heals on its own (a reconnect) or when the key or the number link is fixed: hold the
+        # answer, do not erase it (it expires after OUTBOX_MAX_AGE_S if nobody fixes it)
         return "transient"
     if error.code in PACING_CODES:
         return "pacing"
