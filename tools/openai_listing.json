@@ -1,0 +1,82 @@
+{
+  "interface": {
+    "displayName": "Turbo Notify",
+    "shortDescription": "WhatsApp for your business",
+    "longDescription": "Turbo Notify connects your WhatsApp number to your AI agent. Ask it to send a message, read what customers wrote, check the status of a delivery or see how much of your plan is left.\n\nThe plugin also includes the virtual attendant, a skill that answers your customers on WhatsApp from what you teach it about your business and hands the conversation to a person when it cannot help. It runs on your computer with Codex, keeps its notes in a folder you own, and starts in a mode where you approve every answer. It only answers while Codex is running on your computer.\n\nYou need a Turbo Notify account with a WhatsApp number linked in the dashboard. Sign in with that account the first time the plugin is used. The plugin works only with Turbo Notify.",
+    "developerName": "MENUR TECNOLOGIA LTDA",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://turbonotify.com/en",
+    "supportURL": "https://docs.turbonotify.com/en/help/support/",
+    "privacyPolicyURL": "https://turbonotify.com/en/legal/privacy-policy",
+    "termsOfServiceURL": "https://turbonotify.com/en/legal/terms-of-service",
+    "defaultPrompt": [
+      "List my WhatsApp numbers and tell me which one is connected.",
+      "Set up the Turbo Notify virtual attendant for my business.",
+      "How many messages can I still send this billing cycle?"
+    ],
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/icon.png"
+  },
+  "review": {
+    "test_cases": {
+      "positive": [
+        {
+          "description": "List the connected WhatsApp numbers",
+          "prompt": "List my WhatsApp numbers and tell me which one is connected.",
+          "tools_triggered": "list_numbers",
+          "expected_behavior": "Calls list_numbers and says in plain words which number is connected, without inventing numbers."
+        },
+        {
+          "description": "Send a message and check its delivery",
+          "prompt": "Send a WhatsApp message to my test contact saying: Hello from the reviewer.",
+          "tools_triggered": "send_text, get_message_status",
+          "expected_behavior": "Sends one text with send_text, then reports the delivery status read with get_message_status."
+        },
+        {
+          "description": "Read what customers wrote",
+          "prompt": "What did my last three customers write?",
+          "tools_triggered": "list_messages",
+          "expected_behavior": "Reads received messages with list_messages (direction filter) and summarizes them without inventing text."
+        },
+        {
+          "description": "Check the remaining message quota",
+          "prompt": "How many messages can I still send this billing cycle?",
+          "tools_triggered": "get_message_quota",
+          "expected_behavior": "Calls get_message_quota and states the remaining messages and when the cycle resets."
+        },
+        {
+          "description": "Start the virtual attendant setup",
+          "prompt": "Set up the Turbo Notify virtual attendant for a small bakery.",
+          "tools_triggered": "list_numbers",
+          "expected_behavior": "Follows the virtual-attendant skill: reads the numbers, then asks for the business name, language, administrators and which number to use, one question at a time. Sends nothing to customers."
+        }
+      ],
+      "negative": [
+        {
+          "description": "E-mail is not WhatsApp",
+          "prompt": "Send an e-mail to my customer about the delivery date."
+        },
+        {
+          "description": "Unrelated writing task",
+          "prompt": "Summarize this paragraph in French."
+        },
+        {
+          "description": "Another messaging channel",
+          "prompt": "Check my Instagram direct messages."
+        }
+      ]
+    },
+    "commerce": false
+  },
+  "publication": {
+    "countries": [],
+    "release_notes": "First release: the Turbo Notify tools and the WhatsApp virtual attendant skill.",
+    "translations": {
+      "pt-BR": {
+        "subtitle": "WhatsApp para a sua empresa",
+        "description": "O Turbo Notify liga o seu número de WhatsApp ao seu agente de IA. Peça para ele enviar uma mensagem, ler o que os clientes escreveram, ver o status de uma entrega ou saber quanto falta do seu plano.\n\nO plugin inclui também o atendente virtual, uma skill que responde seus clientes no WhatsApp com o que você ensinou sobre o seu negócio e passa a conversa para uma pessoa quando não consegue ajudar. Ele roda no seu computador com o Codex, guarda as anotações numa pasta sua e começa no modo em que você aprova cada resposta. Só responde enquanto o Codex estiver aberto no seu computador.\n\nVocê precisa de uma conta Turbo Notify com um número de WhatsApp conectado no painel. Entre com essa conta na primeira vez que usar o plugin. O plugin funciona apenas com o Turbo Notify."
+      }
+    }
+  }
+}

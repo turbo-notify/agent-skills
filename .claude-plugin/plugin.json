@@ -1,6 +1,6 @@
 {
   "name": "turbo-notify",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Skills that put the Turbo Notify MCP server to work in your AI harness. The first one is a WhatsApp virtual attendant for businesses that sell products or services.",
   "author": {
     "name": "Turbo Notify"
@@ -12,7 +12,7 @@
     "mcp",
     "customer-service"
   ],
-  "homepage": "https://docs.turbonotify.com/en/general/skills/",
+  "homepage": "https://docs.turbonotify.com/en/agents/skills/",
   "repository": "https://github.com/turbo-notify/agent-skills",
   "icon": "./assets/icon.png",
   "documentationUrl": "https://docs.turbonotify.com/en/guides/virtual-attendant/",
