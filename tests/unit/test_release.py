@@ -20,6 +20,8 @@ def copy_repo(tmp_path: Path) -> Path:
     for name, _key in release.MCP_FILES:
         shutil.copy(ROOT / name, tmp_path / name)
     shutil.copytree(ROOT / ".claude-plugin", tmp_path / ".claude-plugin")
+    shutil.copytree(ROOT / ".codex-plugin", tmp_path / ".codex-plugin")
+    shutil.copytree(ROOT / "assets", tmp_path / "assets")
     shutil.copy(ROOT / "pyproject.toml", tmp_path / "pyproject.toml")
     init = tmp_path / release.HELPER_INIT
     init.parent.mkdir(parents=True)
@@ -201,3 +203,56 @@ def test_check_catches_a_helper_that_was_not_bumped_and_sync_fixes_it(
     assert any("helper __version__" in p for p in release.problems())
     release.sync(None)
     assert release.problems() == []
+
+
+def _codex(repo: Path) -> dict:  # type: ignore[type-arg]
+    return json.loads((repo / ".codex-plugin/plugin.json").read_text())
+
+
+def _save_codex(repo: Path, data: dict) -> None:  # type: ignore[type-arg]
+    (repo / ".codex-plugin/plugin.json").write_text(json.dumps(data))
+
+
+def test_codex_shows_the_brand_icon_not_a_placeholder() -> None:
+    # Codex reads .codex-plugin/plugin.json. Without it the plugin was listed with a generic star,
+    # because the Claude manifest carries the icon under a key Codex does not read.
+    data = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())
+    for key in ("logo", "composerIcon"):
+        assert (ROOT / ".codex-plugin" / ".." / data["interface"][key]).resolve().is_file()
+    assert data["interface"]["logo"] == "./assets/icon.png"
+    assert data["mcpServers"] == "./.mcp.json"
+    assert data["skills"] == release.SKILLS
+
+
+def test_the_codex_manifest_drift_is_caught(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = copy_repo(tmp_path)
+    monkeypatch.setattr(release, "ROOT", repo)
+    data = _codex(repo)
+    data.update(name="other", version="9.9.9", skills="./elsewhere", mcpServers="./nowhere.json")
+    data["interface"]["logo"] = "./assets/missing.png"
+    del data["interface"]["composerIcon"]
+    _save_codex(repo, data)
+    text = " | ".join(release.problems())
+    for fragment in (
+        "codex plugin.json version is 9.9.9",
+        "codex plugin name is other",
+        "codex plugin skills path",
+        "codex plugin mcpServers",
+        "codex plugin interface.logo",
+        "codex plugin interface.composerIcon",
+    ):
+        assert fragment in text
+
+
+def test_sync_writes_the_version_into_the_codex_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = copy_repo(tmp_path)
+    monkeypatch.setattr(release, "ROOT", repo)
+    data = _codex(repo)
+    data["version"] = "0.0.1"
+    _save_codex(repo, data)
+    release.sync(None)
+    assert _codex(repo)["version"] == (repo / "VERSION").read_text().strip()

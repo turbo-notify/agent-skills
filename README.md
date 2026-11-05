@@ -71,6 +71,7 @@ with the command for the agent in use.
 
 ```
 .claude-plugin/        plugin and marketplace manifests (Claude Code, Codex)
+.codex-plugin/         the manifest Codex reads for the name, logo and listing text
 plugin.json            manifest for Antigravity
 .mcp.json              the Turbo Notify MCP server, as Claude Code, Claude Desktop, Cowork and Codex read it
 mcp.json               the same server, as the Agent Plugins format reads it (Copilot, Cursor)
@@ -117,7 +118,7 @@ poetry run python -m evals.attendant run --set offers   # only the check on an o
 TN_EVALS_LIVE=1 poetry run pytest evals                 # the same, as tests (skipped otherwise)
 ```
 
-Releases bump `VERSION`, `latest.json`, the three manifests, the helper and pyproject versions and `CHANGELOG.md` together (`tools/release.py sync`),
+Releases bump `VERSION`, `latest.json`, the four manifests, the helper and pyproject versions and `CHANGELOG.md` together (`tools/release.py sync`),
 then move the `v1` tag, which stays available for anyone who wants to pin to 1.x (`...agent-skills#v1`, or `--ref v1` in Codex).
 
 ## License

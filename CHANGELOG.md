@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+- Codex: the plugin now ships its own Codex manifest (`.codex-plugin/plugin.json`) with the logo, the short and long description, the category and three starter prompts. Before, Codex read only the Claude manifest and listed Turbo Notify with a generic placeholder icon. `tools/release.py check` keeps the new manifest in agreement with `VERSION`, the skills path, the MCP file and the logo file.
+
 ## 0.3.1
 
 - Tooling: `python3 tools/openai_package.py` builds the archive that the OpenAI plugin directory takes: the manifest with the listing, review cases and publication data (from `tools/openai_listing.json`, checked against the portal's limits), the skill, the icon and the MCP server file, without the files and the lines that belong to another vendor's runtime. It only writes a file in `dist/`; nothing is sent anywhere.

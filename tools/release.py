@@ -1,6 +1,6 @@
 """Keeps the version and the manifests in agreement.
 
-``VERSION`` is the single source. ``sync`` writes it into the three manifests and ``latest.json``;
+``VERSION`` is the single source. ``sync`` writes it into the four manifests and ``latest.json``;
 ``check`` fails (exit 1) on any disagreement, a missing changelog entry, a manifest whose name or
 skills path drifted, or an MCP file that stopped pointing at the Turbo Notify server. Run ``check``
 before every release and in the tests.
@@ -17,6 +17,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 NAME = "turbo-notify"
 SKILLS = "./skills"
+CODEX_MANIFEST = ".codex-plugin/plugin.json"
+CODEX_MCP = "./.mcp.json"
 _SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 HELPER_INIT = "skills/virtual-attendant/scripts/tn_assist/__init__.py"
 MCP_URL = "https://mcp.turbonotify.com"
@@ -98,16 +100,34 @@ def _mcp_problems() -> list[str]:
     return found
 
 
+def _codex_problems(codex: dict) -> list[str]:  # type: ignore[type-arg]
+    """Codex reads ``.codex-plugin/plugin.json``, not the Claude manifest: without its ``interface``
+    block the plugin is listed with a generic placeholder icon."""
+    found: list[str] = []
+    if codex.get("skills") != SKILLS:
+        found.append(f"codex plugin skills path is {codex.get('skills')}, expected {SKILLS}")
+    if codex.get("mcpServers") != CODEX_MCP:
+        found.append(f"codex plugin mcpServers is {codex.get('mcpServers')}, expected {CODEX_MCP}")
+    interface = codex.get("interface") or {}
+    for key in ("logo", "composerIcon"):
+        rel = interface.get(key)
+        if not rel or not (ROOT / rel).is_file():
+            found.append(f"codex plugin interface.{key} is {rel!r}, which is not a file")
+    return found
+
+
 def problems() -> list[str]:
     ver = version()
     found: list[str] = []
     plugin = _read(".claude-plugin/plugin.json")
     market = _read(".claude-plugin/marketplace.json")
     root = _read("plugin.json")
+    codex = _read(CODEX_MANIFEST)
     latest = _read("latest.json")
     entry = market["plugins"][0]
     for label, value in (
         ("plugin.json version", plugin["version"]),
+        ("codex plugin.json version", codex.get("version")),
         ("marketplace entry version", entry["version"]),
         ("root plugin.json version", root["version"]),
         ("latest.json version", latest["version"]),
@@ -119,11 +139,13 @@ def problems() -> list[str]:
         ("marketplace name", market["name"]),
         ("marketplace entry name", entry["name"]),
         ("root plugin name", root["name"]),
+        ("codex plugin name", codex.get("name")),
     ):
         if value != NAME:
             found.append(f"{label} is {value}, expected {NAME}")
     if plugin.get("skills") != SKILLS:
         found.append(f"plugin skills path is {plugin.get('skills')}, expected {SKILLS}")
+    found.extend(_codex_problems(codex))
     if entry.get("source") != "./":
         found.append("the marketplace entry must point at the repository root")
     for path, pattern, label in _COPIES:
@@ -149,6 +171,9 @@ def sync(released: str | None) -> None:
     root = _read("plugin.json")
     root["version"] = ver
     _write("plugin.json", root)
+    codex = _read(CODEX_MANIFEST)
+    codex["version"] = ver
+    _write(CODEX_MANIFEST, codex)
     for path, pattern, _label in _COPIES:
         text = (ROOT / path).read_text(encoding="utf-8")
         (ROOT / path).write_text(pattern.sub(rf"\g<1>{ver}\g<3>", text, count=1), encoding="utf-8")
