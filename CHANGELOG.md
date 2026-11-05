@@ -2,6 +2,7 @@
 
 ## 0.3.2
 
+- OpenAI package: the second review case now asks for the message to go to the account's own number and for its delivery status. The old wording ("my test contact") made Codex stop and ask for a number, because a review organization has no contact by that name.
 - Codex: the plugin now ships its own Codex manifest (`.codex-plugin/plugin.json`) with the logo, the short and long description, the category and three starter prompts. Before, Codex read only the Claude manifest and listed Turbo Notify with a generic placeholder icon. `tools/release.py check` keeps the new manifest in agreement with `VERSION`, the skills path, the MCP file and the logo file.
 
 ## 0.3.1

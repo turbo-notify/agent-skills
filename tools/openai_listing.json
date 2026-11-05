@@ -29,9 +29,9 @@
         },
         {
           "description": "Send a message and check its delivery",
-          "prompt": "Send a WhatsApp message to my test contact saying: Hello from the reviewer.",
+          "prompt": "Send a WhatsApp message to my own number saying: Hello from the reviewer. Then tell me whether it was delivered.",
           "tools_triggered": "send_text, get_message_status",
-          "expected_behavior": "Sends one text with send_text, then reports the delivery status read with get_message_status."
+          "expected_behavior": "Reads the connected number, sends one text to it with send_text (the host asks for approval first), then reports the delivery status read with get_message_status."
         },
         {
           "description": "Read what customers wrote",
