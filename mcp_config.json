@@ -1,6 +1,7 @@
 {
   "mcpServers": {
     "turbo-notify": {
+      "url": "https://mcp.turbonotify.com",
       "serverUrl": "https://mcp.turbonotify.com"
     }
   }

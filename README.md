@@ -1,7 +1,7 @@
 # Turbo Notify Agent Skills
 
 Skills that put the [Turbo Notify MCP server](https://docs.turbonotify.com/agents/mcp-server/) to work
-inside your AI agent: Claude Code, Claude Desktop and Cowork, Codex and the Antigravity CLI, and any other
+inside your AI agent: Claude Code, Claude Desktop and Cowork, Codex, the Antigravity CLI and the Gemini CLI, and any other
 agent that reads the Agent Skills format.
 
 ## Skills
@@ -22,6 +22,7 @@ Customer guides (Portuguese and English): [WhatsApp virtual attendant](https://d
 | Claude Desktop and Cowork | Customize, Plugins, Add, Add marketplace, Add from a repository: `turbo-notify/agent-skills`; then Discover, `turbo-notify`, Add |
 | Codex | `codex plugin marketplace add turbo-notify/agent-skills` then `codex plugin add turbo-notify@turbo-notify` |
 | Antigravity | `agy plugin install https://github.com/turbo-notify/agent-skills` |
+| Gemini CLI | `gemini extensions install https://github.com/turbo-notify/agent-skills` |
 | Hermes Agent | `hermes skills install turbo-notify/agent-skills/skills/virtual-attendant`, then add the MCP server `https://mcp.turbonotify.com` in Hermes |
 | OpenCode | `npx skills add turbo-notify/agent-skills -a opencode` (project folder `.agents/skills/`, or `-g` for `~/.config/opencode/skills/`), then `opencode mcp add --global --url https://mcp.turbonotify.com turbo-notify` and `opencode mcp auth turbo-notify` to sign in. Guide: [Turbo Notify in OpenCode](https://docs.turbonotify.com/en/agents/opencode/) |
 | Other agents that read the Agent Skills format (Cursor, Copilot and more) | `npx skills add turbo-notify/agent-skills`, then add the MCP server `https://mcp.turbonotify.com` in that agent's own settings |
@@ -46,6 +47,7 @@ with the command for the agent in use.
 | Claude Desktop and Cowork | The marketplace syncs from the repository; if a new version does not show up, remove the marketplace and add it again |
 | Codex | `codex plugin marketplace upgrade` then `codex plugin add turbo-notify@turbo-notify` |
 | Antigravity | Run the install command again |
+| Gemini CLI | `gemini extensions update turbo-notify` |
 
 ## What it reaches
 
@@ -73,6 +75,7 @@ with the command for the agent in use.
 .claude-plugin/        plugin and marketplace manifests (Claude Code, Codex)
 .codex-plugin/         the manifest Codex reads for the name, logo and listing text
 plugin.json            manifest for Antigravity
+gemini-extension.json  manifest for the Gemini CLI (the connection to the server)
 .mcp.json              the Turbo Notify MCP server, as Claude Code, Claude Desktop, Cowork and Codex read it
 mcp.json               the same server, as the Agent Plugins format reads it (Copilot, Cursor)
 mcp_config.json        the same server, as Antigravity reads it
@@ -118,7 +121,7 @@ poetry run python -m evals.attendant run --set offers   # only the check on an o
 TN_EVALS_LIVE=1 poetry run pytest evals                 # the same, as tests (skipped otherwise)
 ```
 
-Releases bump `VERSION`, `latest.json`, the four manifests, the helper and pyproject versions and `CHANGELOG.md` together (`tools/release.py sync`),
+Releases bump `VERSION`, `latest.json`, the five manifests, the helper and pyproject versions and `CHANGELOG.md` together (`tools/release.py sync`),
 then move the `v1` tag, which stays available for anyone who wants to pin to 1.x (`...agent-skills#v1`, or `--ref v1` in Codex).
 
 ## License

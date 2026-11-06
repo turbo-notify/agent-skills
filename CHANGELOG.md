@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.3
+
+- Antigravity: the root `plugin.json` now carries everything the Antigravity marketplace asks for (display name, a 127 character description, the author with its address, up to three starter prompts, the logo, the license and the repository). Before it had only the name, the version and a long description, which `agy plugin validate --strict` accepts but the marketplace does not
+- Antigravity: `mcp_config.json` gives the server address under both `url` (what the plugin guide documents) and `serverUrl` (what the installed runtime declares), so the connection works whichever one the installed version reads
+- Gemini CLI: the plugin ships a `gemini-extension.json` (the sign-in connection to the server only), so the Gemini CLI extension gallery can index the repository. The install command is `gemini extensions install https://github.com/turbo-notify/agent-skills`
+- Tooling: `tools/release.py` keeps five manifests on one version and now checks the Antigravity marketplace fields (a square PNG logo of at least 128 pixels, an `https` author, at most three prompts), both address keys of `mcp_config.json` and the Gemini extension, with tests
+
 ## 0.3.2
 
 - OpenAI package: the second review case now asks for the message to go to the account's own number and for its delivery status. The old wording ("my test contact") made Codex stop and ask for a number, because a review organization has no contact by that name.

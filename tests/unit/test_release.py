@@ -15,7 +15,7 @@ import release  # noqa: E402
 
 
 def copy_repo(tmp_path: Path) -> Path:
-    for name in ("VERSION", "latest.json", "plugin.json", "CHANGELOG.md"):
+    for name in ("VERSION", "latest.json", "plugin.json", "gemini-extension.json", "CHANGELOG.md"):
         shutil.copy(ROOT / name, tmp_path / name)
     for name, _key in release.MCP_FILES:
         shutil.copy(ROOT / name, tmp_path / name)
@@ -110,7 +110,7 @@ def test_claude_validates_the_plugin_and_marketplace() -> None:
 @pytest.mark.skipif(shutil.which("agy") is None, reason="agy CLI not installed")
 def test_antigravity_validates_the_plugin(tmp_path: Path) -> None:
     done = subprocess.run(
-        ["agy", "plugin", "validate", str(ROOT)],
+        ["agy", "plugin", "validate", str(ROOT), "--strict"],
         capture_output=True,
         text=True,
         env={"HOME": str(tmp_path), "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin"},
@@ -120,10 +120,11 @@ def test_antigravity_validates_the_plugin(tmp_path: Path) -> None:
 
 
 def test_every_harness_gets_the_turbo_notify_server_from_the_plugin() -> None:
-    for path, key in release.MCP_FILES:
+    for path, keys in release.MCP_FILES:
         servers = json.loads((ROOT / path).read_text())["mcpServers"]
         assert list(servers) == ["turbo-notify"], path
-        assert servers["turbo-notify"][key] == "https://mcp.turbonotify.com", path
+        for key in keys:
+            assert servers["turbo-notify"][key] == "https://mcp.turbonotify.com", (path, key)
 
 
 def test_the_plugin_never_ships_a_credential_in_the_mcp_files() -> None:
@@ -173,6 +174,7 @@ def test_the_manifest_files_are_not_ignored_by_git() -> None:
         ".mcp.json",
         "mcp.json",
         "mcp_config.json",
+        "gemini-extension.json",
         "agents/contact-attendant.md",
     ):
         done = subprocess.run(["git", "-C", str(ROOT), "check-ignore", "-q", path])
@@ -256,3 +258,103 @@ def test_sync_writes_the_version_into_the_codex_manifest(
     _save_codex(repo, data)
     release.sync(None)
     assert _codex(repo)["version"] == (repo / "VERSION").read_text().strip()
+
+
+def _antigravity(repo: Path) -> dict:  # type: ignore[type-arg]
+    return json.loads((repo / "plugin.json").read_text())
+
+
+def test_the_antigravity_marketplace_fields_are_complete() -> None:
+    root = _antigravity(ROOT)
+    assert root["displayName"] == "Turbo Notify"
+    assert root["author"]["url"].startswith("https://")
+    assert 1 <= len(root["suggestedPrompts"]) <= 3
+    assert 120 <= len(root["description"]) <= 160  # the length the marketplace recommends
+    assert release._png_side(ROOT / "assets/icon.png") == (512, 512)
+
+
+def test_check_catches_an_incomplete_antigravity_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = copy_repo(tmp_path)
+    monkeypatch.setattr(release, "ROOT", repo)
+    data = _antigravity(repo)
+    del data["displayName"]
+    data["author"] = {"name": "Turbo Notify", "url": "http://insecure.example"}
+    data["suggestedPrompts"] = ["a", "b", "c", "d"]
+    data["logo"] = "./assets/missing.png"
+    (repo / "plugin.json").write_text(json.dumps(data))
+    text = " | ".join(release.problems())
+    for fragment in ("displayName is missing", "https url", "one to three prompts", "logo is"):
+        assert fragment in text
+
+
+def test_check_catches_a_logo_that_is_too_small_for_the_marketplace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = copy_repo(tmp_path)
+    monkeypatch.setattr(release, "ROOT", repo)
+    tiny = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+        + (64).to_bytes(4, "big")
+        + (64).to_bytes(4, "big")
+        + b"\x08\x06\x00\x00\x00"
+    )
+    (repo / "assets/icon.png").write_bytes(tiny)
+    assert any("at least 128 pixels" in p for p in release.problems())
+
+
+def test_antigravity_gets_the_address_under_both_keys(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = copy_repo(tmp_path)
+    monkeypatch.setattr(release, "ROOT", repo)
+    data = json.loads((repo / "mcp_config.json").read_text())
+    del data["mcpServers"]["turbo-notify"]["url"]
+    (repo / "mcp_config.json").write_text(json.dumps(data))
+    assert any("mcp_config.json url is None" in p for p in release.problems())
+
+
+def _gemini(repo: Path) -> dict:  # type: ignore[type-arg]
+    return json.loads((repo / "gemini-extension.json").read_text())
+
+
+def test_the_gemini_extension_is_the_sign_in_connection_only() -> None:
+    data = _gemini(ROOT)
+    assert data["name"] == "turbo-notify"
+    assert data["version"] == (ROOT / "VERSION").read_text().strip()
+    assert data["mcpServers"] == {"turbo-notify": {"httpUrl": "https://mcp.turbonotify.com"}}
+
+
+def test_check_catches_a_drifting_or_leaky_gemini_extension(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = copy_repo(tmp_path)
+    monkeypatch.setattr(release, "ROOT", repo)
+    data = _gemini(repo)
+    data["version"] = "0.0.1"
+    data["mcpServers"]["turbo-notify"]["headers"] = {"Authorization": "Bearer x"}
+    (repo / "gemini-extension.json").write_text(json.dumps(data))
+    text = " | ".join(release.problems())
+    assert "gemini extension version is 0.0.1" in text
+    assert "gemini extension has fields ['headers']" in text
+
+
+def test_sync_writes_the_version_into_the_gemini_extension(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = copy_repo(tmp_path)
+    monkeypatch.setattr(release, "ROOT", repo)
+    data = _gemini(repo)
+    data["version"] = "0.0.1"
+    (repo / "gemini-extension.json").write_text(json.dumps(data))
+    release.sync(None)
+    assert _gemini(repo)["version"] == (repo / "VERSION").read_text().strip()
+
+
+@pytest.mark.skipif(shutil.which("gemini") is None, reason="gemini CLI not installed")
+def test_gemini_validates_the_extension() -> None:
+    done = subprocess.run(
+        ["gemini", "extensions", "validate", str(ROOT)], capture_output=True, text=True
+    )
+    assert done.returncode == 0 and "successfully validated" in (done.stdout + done.stderr)
