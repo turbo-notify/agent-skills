@@ -25,6 +25,7 @@ Customer guides (Portuguese and English): [WhatsApp virtual attendant](https://d
 | Gemini CLI | `gemini extensions install https://github.com/turbo-notify/agent-skills` |
 | Hermes Agent | `hermes skills install turbo-notify/agent-skills/skills/virtual-attendant`, then add the MCP server `https://mcp.turbonotify.com` in Hermes |
 | OpenCode | `npx skills add turbo-notify/agent-skills -a opencode` (project folder `.agents/skills/`, or `-g` for `~/.config/opencode/skills/`), then `opencode mcp add --global --url https://mcp.turbonotify.com turbo-notify` and `opencode mcp auth turbo-notify` to sign in. Guide: [Turbo Notify in OpenCode](https://docs.turbonotify.com/en/agents/opencode/) |
+| Cline | Add the MCP server `https://mcp.turbonotify.com` to `cline_mcp_settings.json` (steps for the editor and the CLI in [`llms-install.md`](llms-install.md)) |
 | Other agents that read the Agent Skills format (Cursor, Copilot and more) | `npx skills add turbo-notify/agent-skills`, then add the MCP server `https://mcp.turbonotify.com` in that agent's own settings |
 
 The unattended runner exists for Claude Code and Codex only. In the other agents the attendant runs in

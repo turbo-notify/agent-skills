@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.4
+
+- Cline: `llms-install.md` tells Cline how to add the Turbo Notify MCP server: the entry for `cline_mcp_settings.json`, where that file is in the editor and in the CLI, and how to sign in. Checked with the Cline CLI 3.0.74: a session given only the README and this file added the entry, and a new session listed the 36 tools.
+- Docs: the install table in the README now lists Cline.
+- Assets: `assets/icon-400.png`, the logo at 400 by 400 pixels that the Cline marketplace form asks for.
+
 ## 0.3.3
 
 - Antigravity: the root `plugin.json` now carries everything the Antigravity marketplace asks for (display name, a 127 character description, the author with its address, up to three starter prompts, the logo, the license and the repository). Before it had only the name, the version and a long description, which `agy plugin validate --strict` accepts but the marketplace does not

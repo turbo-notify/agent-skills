@@ -1,7 +1,7 @@
 {
   "name": "turbo-notify",
   "displayName": "Turbo Notify",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Connect your WhatsApp number to your AI agent: send and read messages, and run a virtual attendant that answers your customers.",
   "author": {
     "name": "Turbo Notify",
