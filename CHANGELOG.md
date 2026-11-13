@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.13
+
+- Version: the plugin now carries the version 1.5.13 in every manifest (Claude Code, Codex, Antigravity, Gemini CLI), in `latest.json`, in the helper and in `pyproject.toml`. The number follows the scheme the owner chose for every public Turbo Notify package, so it jumps from 0.3.4 without the versions in between; the contents are the same as 0.3.4.
+- MCP server: it is listed in the official MCP Registry as `com.turbonotify/whatsapp` (also published as `com.turbonotify/turbo-notify`), both at 1.5.13. The plugin keeps the name `turbo-notify`, as the marketplaces that review plugin names ask for the product name, not a third-party trademark.
+
 ## 0.3.4
 
 - Cline: `llms-install.md` tells Cline how to add the Turbo Notify MCP server: the entry for `cline_mcp_settings.json`, where that file is in the editor and in the CLI, and how to sign in. Checked with the Cline CLI 3.0.74: a session given only the README and this file added the entry, and a new session listed the 36 tools.
