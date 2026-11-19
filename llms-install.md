@@ -1,6 +1,6 @@
-# Install the Turbo Notify MCP server in Cline
+# Install the Turbo Notify WhatsApp server in Cline
 
-Turbo Notify is a hosted MCP server. There is nothing to download, build or run on your machine: Cline connects to `https://mcp.turbonotify.com` over Streamable HTTP.
+Turbo Notify is a hosted MCP server that lets Cline send and read WhatsApp messages from the person's own number. There is nothing to download, build or run on your machine: Cline connects to `https://mcp.turbonotify.com` over Streamable HTTP.
 
 ## 1. Add the server
 

@@ -23,11 +23,11 @@ Customer guides (Portuguese and English): [WhatsApp virtual attendant](https://d
 | Claude Desktop and Cowork | Customize, Plugins, Add, Add marketplace, Add from a repository: `turbo-notify/agent-skills`; then Discover, `turbo-notify`, Add |
 | Codex | `codex plugin marketplace add turbo-notify/agent-skills` then `codex plugin add turbo-notify@turbo-notify` |
 | Antigravity | `agy plugin install https://github.com/turbo-notify/agent-skills` |
-| Gemini CLI | `gemini extensions install https://github.com/turbo-notify/agent-skills` (the connection to the tools only; the virtual attendant is not tested here) |
-| Hermes Agent | `hermes skills install turbo-notify/agent-skills/skills/virtual-attendant`, then add the MCP server `https://mcp.turbonotify.com` in Hermes |
+| Gemini CLI | `gemini extensions install https://github.com/turbo-notify/agent-skills` (the connection to the tools only; we have not run the Gemini CLI, and the virtual attendant is not included) |
+| Hermes Agent | `hermes skills install turbo-notify/agent-skills/skills/virtual-attendant`, then add the MCP server `https://mcp.turbonotify.com` in Hermes (not run end to end) |
 | OpenCode | `npx skills add turbo-notify/agent-skills -a opencode` (project folder `.agents/skills/`, or `-g` for `~/.config/opencode/skills/`), then `opencode mcp add --global --url https://mcp.turbonotify.com turbo-notify` and `opencode mcp auth turbo-notify` to sign in. Guide: [Turbo Notify in OpenCode](https://docs.turbonotify.com/en/agents/opencode/) |
-| Cline | Add the MCP server `https://mcp.turbonotify.com` to `cline_mcp_settings.json` (steps for the editor and the CLI in [`llms-install.md`](llms-install.md)) |
-| Other agents that read the Agent Skills format (Cursor, Copilot and more) | `npx skills add turbo-notify/agent-skills`, then add the MCP server `https://mcp.turbonotify.com` in that agent's own settings |
+| Cline | Add the MCP server `https://mcp.turbonotify.com` to `cline_mcp_settings.json` (steps for the editor and the CLI in [`llms-install.md`](llms-install.md); checked with the CLI, the editor steps were not run) |
+| Other agents that read the Agent Skills format (for example Cursor and Copilot; not tested by us) | `npx skills add turbo-notify/agent-skills`, then add the MCP server `https://mcp.turbonotify.com` in that agent's own settings |
 
 The unattended runner exists for Claude Code and Codex only. In the other agents the attendant runs in
 assisted mode: a session you keep open, where a person approves each draft.
