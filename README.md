@@ -1,4 +1,4 @@
-# Turbo Notify Agent Skills
+# WhatsApp skills for AI agents, with Turbo Notify
 
 Use your own WhatsApp number from your AI agent: send and read messages, and run a virtual attendant that answers your
 customers. Works with Claude Code, Claude Desktop and Cowork, Codex and the Antigravity CLI, and with any agent that
