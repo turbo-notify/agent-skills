@@ -358,3 +358,36 @@ def test_gemini_validates_the_extension() -> None:
         ["gemini", "extensions", "validate", str(ROOT)], capture_output=True, text=True
     )
     assert done.returncode == 0 and "successfully validated" in (done.stdout + done.stderr)
+
+
+def _shop_window_descriptions() -> dict[str, str]:
+    """Every description a marketplace shows for this plugin, by file and field."""
+    found: dict[str, str] = {}
+    for name in (".claude-plugin/plugin.json", "plugin.json", "gemini-extension.json"):
+        found[name] = json.loads((ROOT / name).read_text())["description"]
+    market = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())
+    found[".claude-plugin/marketplace.json"] = market["description"]
+    for index, entry in enumerate(market["plugins"]):
+        found[f".claude-plugin/marketplace.json plugins[{index}]"] = entry["description"]
+    codex = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())
+    found[".codex-plugin/plugin.json"] = codex["description"]
+    for field in ("shortDescription", "longDescription"):
+        found[f".codex-plugin/plugin.json interface.{field}"] = codex["interface"][field]
+    return found
+
+
+def test_every_listing_description_says_whatsapp_and_does_not_open_with_the_product() -> None:
+    # ADR 2026-11-19: a stranger must see WhatsApp first; the product name is only a label.
+    for where, text in _shop_window_descriptions().items():
+        assert "WhatsApp" in text, f"{where} does not say WhatsApp"
+        if where.endswith("interface.longDescription"):
+            # The OpenAI review text (tools/openai_listing.json): it names the product but the same
+            # sentence carries the WhatsApp function, so rule 2 holds; do not edit it while in review.
+            continue
+        assert not text.startswith("Turbo Notify"), f"{where} opens with the product name"
+
+
+def test_the_first_screen_of_the_readme_and_the_cline_guide_says_whatsapp() -> None:
+    for name in ("README.md", "llms-install.md"):
+        first_line = (ROOT / name).read_text().splitlines()[0]
+        assert "WhatsApp" in first_line, f"{name} title does not say WhatsApp"
