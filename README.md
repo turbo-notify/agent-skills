@@ -1,8 +1,9 @@
 # Turbo Notify Agent Skills
 
-Skills that put the [Turbo Notify MCP server](https://docs.turbonotify.com/agents/mcp-server/) to work
-inside your AI agent: Claude Code, Claude Desktop and Cowork, Codex, the Antigravity CLI and the Gemini CLI, and any other
-agent that reads the Agent Skills format.
+Use your own WhatsApp number from your AI agent: send and read messages, and run a virtual attendant that answers your
+customers. Works with Claude Code, Claude Desktop and Cowork, Codex and the Antigravity CLI, and with any agent that
+reads the Agent Skills format. The Turbo Notify MCP server ([docs](https://docs.turbonotify.com/en/agents/mcp-server/))
+connects the agent to your number.
 
 ## Skills
 
@@ -22,7 +23,7 @@ Customer guides (Portuguese and English): [WhatsApp virtual attendant](https://d
 | Claude Desktop and Cowork | Customize, Plugins, Add, Add marketplace, Add from a repository: `turbo-notify/agent-skills`; then Discover, `turbo-notify`, Add |
 | Codex | `codex plugin marketplace add turbo-notify/agent-skills` then `codex plugin add turbo-notify@turbo-notify` |
 | Antigravity | `agy plugin install https://github.com/turbo-notify/agent-skills` |
-| Gemini CLI | `gemini extensions install https://github.com/turbo-notify/agent-skills` |
+| Gemini CLI | `gemini extensions install https://github.com/turbo-notify/agent-skills` (the connection to the tools only; the virtual attendant is not tested here) |
 | Hermes Agent | `hermes skills install turbo-notify/agent-skills/skills/virtual-attendant`, then add the MCP server `https://mcp.turbonotify.com` in Hermes |
 | OpenCode | `npx skills add turbo-notify/agent-skills -a opencode` (project folder `.agents/skills/`, or `-g` for `~/.config/opencode/skills/`), then `opencode mcp add --global --url https://mcp.turbonotify.com turbo-notify` and `opencode mcp auth turbo-notify` to sign in. Guide: [Turbo Notify in OpenCode](https://docs.turbonotify.com/en/agents/opencode/) |
 | Cline | Add the MCP server `https://mcp.turbonotify.com` to `cline_mcp_settings.json` (steps for the editor and the CLI in [`llms-install.md`](llms-install.md)) |
