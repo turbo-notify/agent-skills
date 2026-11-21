@@ -168,13 +168,57 @@ def test_the_archive_carries_the_one_mcp_server(archive: Path) -> None:  # AC9
 def test_the_manifest_has_the_listing_the_review_and_the_publication(archive: Path) -> None:  # AC10
     block = listing_manifest(archive)["extensions"]["com.openai"]
     interface = block["interface"]
-    assert interface["displayName"] == "Turbo Notify"
+    assert interface["displayName"] == "WhatsApp by Turbo Notify"  # ADR 2026-11-13, 4th amendment
     assert interface["category"] == "Productivity"
     assert interface["composerIcon"] == interface["logo"] == "./assets/icon.png"
     cases = block["review"]["test_cases"]
     assert (len(cases["positive"]), len(cases["negative"])) == (5, 3)
     assert block["publication"]["countries"] == []  # worldwide: an empty list lifts the restriction
     assert pkg._png_size(zipfile.ZipFile(archive).read("assets/icon.png")) == (512, 512)
+
+
+def test_the_listing_is_found_by_whatsapp_and_usable_on_the_first_try(archive: Path) -> None:
+    """Spec 2026-11-21: the directory search ranks the NAME first, and the person must see
+    what to ask, what is needed and what the text retention is before installing."""
+    block = listing_manifest(archive)["extensions"]["com.openai"]
+    interface = block["interface"]
+    assert interface["displayName"].startswith("WhatsApp")
+    assert len(interface["displayName"]) <= pkg.NAME_MAX
+    # The phrase the directory search matches.
+    assert interface["shortDescription"] == "WhatsApp for your business"
+    # Three starter prompts at most (the format), and none asks for the attendant: it only runs in
+    # Codex on the person's computer and these prompts are also shown in ChatGPT.
+    prompts = interface["defaultPrompt"]
+    assert len(prompts) == 3 and all(len(prompt) <= pkg.PROMPT_MAX for prompt in prompts)
+    assert not any("attendant" in prompt.lower() for prompt in prompts)
+    long_text = interface["longDescription"]
+    assert long_text.startswith("Send and read WhatsApp")
+    for fact in (
+        "https://dashboard.turbonotify.com/auth/signup",  # where to get the account
+        "one hour by default",  # how long the text of received messages is kept
+        "every 14 days",  # WhatsApp ends the link after 14 days without use of the phone
+        "In ChatGPT you get the tools above, not the attendant",
+    ):
+        assert fact in long_text, f"the long description does not say: {fact}"
+    translated = block["publication"]["translations"]["pt-BR"]["description"]
+    for fact in (
+        "https://dashboard.turbonotify.com/auth/signup",
+        "uma hora por padrão",
+        "a cada 14 dias",
+        "No ChatGPT você tem as ferramentas acima, não o atendente",
+    ):
+        assert fact in translated, f"the pt-BR description does not say: {fact}"
+    for text in (long_text, translated, *prompts):
+        assert "—" not in text and "–" not in text
+    # The portal flags a description that mentions pricing or a subscription (2026-11-21: "longer on
+    # some plans" and "count toward your plan" raised it); "your plan is left" was accepted.
+    for phrase in (
+        "on some plans",
+        "count toward your plan",
+        "mais tempo em alguns planos",
+        "contam no seu plano",
+    ):
+        assert phrase not in long_text and phrase not in translated
 
 
 def test_the_author_is_the_developer_and_no_claude_style_key_is_left(archive: Path) -> None:  # AC11

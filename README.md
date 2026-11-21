@@ -5,6 +5,10 @@ customers. Works with Claude Code, Claude Desktop and Cowork, Codex and the Anti
 reads the Agent Skills format. The Turbo Notify MCP server ([docs](https://docs.turbonotify.com/en/agents/mcp-server/))
 connects the agent to your number.
 
+In ChatGPT, the tools are in the plugin directory: search for Turbo Notify under Plugins, install it and sign in
+([guide](https://docs.turbonotify.com/en/agents/chatgpt/)). ChatGPT gets the tools, not the virtual attendant, which runs
+on your computer in Claude Code or Codex.
+
 ## Skills
 
 | Skill | What it does |
