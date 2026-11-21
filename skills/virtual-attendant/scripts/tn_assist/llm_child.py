@@ -33,6 +33,8 @@ DEFAULT_BASE = "https://api.openai.com/v1"
 MAX_TURNS = 8
 TOOL_TEXT_LIMIT = 20_000
 MCP_VERSION = "2025-06-18"
+# Some endpoints sit behind a firewall that refuses Python's default agent name (Groq says 403).
+_BASE_HEADERS = {"content-type": "application/json", "user-agent": "tn-assist-api/1"}
 
 
 class ChildError(Exception):
@@ -44,7 +46,7 @@ def _post(
 ) -> tuple[bytes, Any]:
     data = json.dumps(body).encode("utf-8")
     request = urllib.request.Request(  # noqa: S310
-        url, data=data, headers={"content-type": "application/json", **headers}, method="POST"
+        url, data=data, headers={**_BASE_HEADERS, **headers}, method="POST"
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310

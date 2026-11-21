@@ -1,8 +1,9 @@
 # Reproducible proof that the attendant runs in a clean container with no agent program.
 # Needs Docker. From the agent-skills folder:
 #   docker run --rm -v "$PWD/skills/virtual-attendant:/skill:ro" \
-#     -v "$PWD/tests/e2e/cloud_container_proof.py:/t/proof.py:ro" python:3.12-slim python /t/proof.py
-# It starts a stand-in Turbo Notify API and a stand-in model inside the container (no network, no keys).
+#     -v "$PWD/tests/e2e/cloud_container_proof.py:/t/proof.py:ro" \
+#     python:3.12-slim python /t/proof.py
+# It starts a stand-in Turbo Notify API and a stand-in model inside the container (no keys).
 """Clean-container proof: the attendant runs with only Python, no Codex and no Claude Code.
 
 Runs inside python:3.12-slim. Starts a fake Turbo Notify API and a fake model endpoint on localhost,
@@ -30,18 +31,29 @@ LLM_KEY = "llm-test-key"
 QUESTION = "Oi, vocês entregam hoje? Quanto custa o pão francês?"
 state = {"armed": False, "served": False, "sent": [], "model": [], "tn_auth": set()}
 EVENT = {
-    "id": "evt_" + "1" * 32, "type": "message.received", "number_id": NUM,
+    "id": "evt_" + "1" * 32,
+    "type": "message.received",
+    "number_id": NUM,
     "created_at": "2026-11-21T22:00:00Z",
     "data": {
-        "id": "msg_" + "2" * 32, "at": "2026-11-21T22:00:00Z", "content_type": "text",
-        "preview": QUESTION[:40], "direction": "inbound", "origin": "native",
-        "from": {"number": CUSTOMER, "name": "Ana Souza"}, "to": {"number": CONNECTED},
+        "id": "msg_" + "2" * 32,
+        "at": "2026-11-21T22:00:00Z",
+        "content_type": "text",
+        "preview": QUESTION[:40],
+        "direction": "inbound",
+        "origin": "native",
+        "from": {"number": CUSTOMER, "name": "Ana Souza"},
+        "to": {"number": CONNECTED},
     },
 }
 DECISION = {
     "reply": "Oi, Ana! Entregamos das 8h às 18h. O pão francês custa R$ 0,80 a unidade.",
-    "facts": [{"key": "interest", "value": "pão francês"}], "escalate": None, "language": "pt",
-    "state": None, "quote": None, "no_reply_needed": False,
+    "facts": [{"key": "interest", "value": "pão francês"}],
+    "escalate": None,
+    "language": "pt",
+    "state": None,
+    "quote": None,
+    "no_reply_needed": False,
 }
 
 
@@ -112,18 +124,55 @@ def main():
     assert shutil.which("codex") is None and shutil.which("claude") is None, "an agent is installed"
     tn_url, llm_url = serve(TN), serve(Model)
     env = {
-        "PATH": os.environ["PATH"], "HOME": "/tmp/home", "PYTHONDONTWRITEBYTECODE": "1",
-        "TN_ASSIST_BASE": "/tmp/data", "TN_ASSIST_ORG": ORG, "TN_ASSIST_NUMBER": NUM,
-        "TURBO_NOTIFY_API_KEY": TN_KEY, "TURBO_NOTIFY_API_URL": tn_url,
-        "TN_LLM_BASE_URL": llm_url, "TN_LLM_API_KEY": LLM_KEY, "TN_LLM_MODEL": "test-model",
+        "PATH": os.environ["PATH"],
+        "HOME": "/tmp/home",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "TN_ASSIST_BASE": "/tmp/data",
+        "TN_ASSIST_ORG": ORG,
+        "TN_ASSIST_NUMBER": NUM,
+        "TURBO_NOTIFY_API_KEY": TN_KEY,
+        "TURBO_NOTIFY_API_URL": tn_url,
+        "TN_LLM_BASE_URL": llm_url,
+        "TN_LLM_API_KEY": LLM_KEY,
+        "TN_LLM_MODEL": "test-model",
     }
     os.makedirs("/tmp/home", exist_ok=True)
-    run(["init", "--connected", CONNECTED, "--business", "Padaria Aurora", "--lang", "pt",
-         "--harness", "api", "--admin", "5571999258283", "--admin-name", "Dono"], env)
+    run(
+        [
+            "init",
+            "--connected",
+            CONNECTED,
+            "--business",
+            "Padaria Aurora",
+            "--lang",
+            "pt",
+            "--harness",
+            "api",
+            "--admin",
+            "5571999258283",
+            "--admin-name",
+            "Dono",
+        ],
+        env,
+    )
     with open("/tmp/pricing.md", "w") as f:
-        f.write("Pão francês: R$ 0,80 a unidade. Bolo de cenoura: R$ 45. Entregamos das 8h às 18h.\n")
-    run(["kb-write", "--path", "pricing.md", "--visibility", "public",
-         "--description", "precos e entrega", "--from-file", "/tmp/pricing.md"], env)
+        f.write(
+            "Pão francês: R$ 0,80 a unidade. Bolo de cenoura: R$ 45. Entregamos das 8h às 18h.\n"
+        )
+    run(
+        [
+            "kb-write",
+            "--path",
+            "pricing.md",
+            "--visibility",
+            "public",
+            "--description",
+            "precos e entrega",
+            "--from-file",
+            "/tmp/pricing.md",
+        ],
+        env,
+    )
     run(["mode", "auto"], env)
     old = dict(EVENT, id="evt_" + "0" * 32, created_at="2026-11-21T21:00:00Z")
     old["data"] = dict(EVENT["data"], id="msg_" + "9" * 32, at="2026-11-21T21:00:00Z")
@@ -132,7 +181,10 @@ def main():
     run(["cursor", "--from-page", "/tmp/page.json"], env)
     runner = subprocess.Popen(
         [sys.executable, PKG, "run", "--harness", "api", "--interval", "2"],
-        env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
     )
     time.sleep(4)
     state["armed"] = True  # the customer writes now
@@ -148,7 +200,8 @@ def main():
         for name in files:
             if name.endswith((".log", ".jsonl")) and ("runner" in name or "log" in root):
                 print("--- file", os.path.join(root, name))
-                print(open(os.path.join(root, name), errors="replace").read()[-900:])
+                with open(os.path.join(root, name), errors="replace") as log_file:
+                    print(log_file.read()[-900:])
     if state["model"]:
         print("--- prompt tail:", state["model"][0][1]["messages"][0]["content"][-500:])
     sent = state["sent"][0]
@@ -160,7 +213,9 @@ def main():
     headers, body = state["model"][0]
     prompt = body["messages"][0]["content"]
     assert headers.get("Authorization", headers.get("authorization")) == f"Bearer {LLM_KEY}"
-    assert QUESTION in prompt and "R$ 0,80" in prompt  # the model got the customer and the knowledge
+    assert (
+        QUESTION in prompt and "R$ 0,80" in prompt
+    )  # the model got the customer and the knowledge
     assert TN_KEY not in json.dumps(state["model"])  # ...and never the Turbo Notify key
     assert "tools" not in body  # a customer turn has no tools
     print("--- model calls:", len(state["model"]), "| TN auth headers seen:", len(state["tn_auth"]))

@@ -116,6 +116,8 @@ def test_a_customer_turn_gets_the_model_key_and_never_the_turbo_notify_key(
     assert run_child(c, timeout=30).strip() == '{"reply": "Oi"}'
     headers, body = fake.model_requests[0]
     assert headers["authorization"] == f"Bearer {LLM_KEY}"
+    # A real endpoint refused the default Python agent name (Groq, 2026-11-21): name ourselves.
+    assert headers["user-agent"].startswith("tn-assist-api/")
     assert body["messages"] == [{"role": "user", "content": "PROMPT"}] and "tools" not in body
     assert fake.mcp_requests == []  # a customer turn never touches Turbo Notify
 
