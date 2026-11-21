@@ -49,6 +49,7 @@ If it is not clear which one, ask.
 - Memory layers and summaries: [references/memory.md](references/memory.md)
 - Knowledge files and templates: [references/knowledge.md](references/knowledge.md)
 - Privacy, retention, erasing: [references/privacy.md](references/privacy.md)
+- Run it on a server or in a container, with no agent program: [references/harness-api.md](references/harness-api.md)
 
 ## Never
 

@@ -82,7 +82,7 @@ def test_the_only_tools_a_profile_ever_allows_are_read_tools_of_turbo_notify() -
     assert not {"send_text", "reply_to_message", "delete_message"} & set(ADMIN_READ_TOOLS)
 
 
-@pytest.mark.parametrize("harness", ["claude-code", "codex"])
+@pytest.mark.parametrize("harness", ["claude-code", "codex", "api"])
 @pytest.mark.parametrize("role", ["contact", "compaction", "admin", "attendant"])
 def test_a_profile_names_no_server_but_turbo_notify(
     tmp_path: Path, harness: str, role: str
@@ -112,4 +112,44 @@ def test_the_helper_sends_only_through_the_turbo_notify_api() -> None:
         assert "smtplib" not in code and "socket.create_connection" not in code, path.name
         assert "mcp__" not in code.replace("mcp__{MCP_NAME}__", ""), path.name
     network = [p.name for p in HELPER if "urlopen" in _code(p)]
-    assert sorted(network) == ["runner.py", "version.py"]  # the API, and the version file
+    # The API, the version file, and the model child (below): a separate process that never sees
+    # the workspace, like the agent programs the other harnesses start.
+    assert sorted(network) == ["llm_child.py", "runner.py", "version.py"]
+
+
+def test_the_model_child_of_the_api_harness_touches_no_workspace_and_runs_nothing() -> None:
+    """The child that calls a model over HTTP holds one model key and, for an administrator, the
+    Turbo Notify key. It must not be able to read the workspace, write a file, start a program or
+    run what the model says, so a customer's words can change the text of the answer and nothing
+    else."""
+    import ast
+
+    path = next(p for p in HELPER if p.name == "llm_child.py")
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported |= {a.name for a in node.names}
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            imported.add(node.module)
+    allowed = {
+        "__future__", "json", "os", "sys", "typing", "urllib.error", "urllib.parse",
+        "urllib.request", "tn_assist.profiles",
+    }  # fmt: skip
+    assert imported <= allowed, sorted(imported - allowed)
+    code = _code(path)
+    for banned in (
+        r"\bopen\(",
+        r"subprocess",
+        r"\beval\(",
+        r"\bexec\(",
+        r"os\.system",
+        r"os\.popen",
+        r"shutil",
+        r"pathlib",
+        r"__import__",
+        r"importlib",
+        r"compile\(",
+        r"socket\.",
+    ):
+        assert not re.search(banned, code), banned

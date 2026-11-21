@@ -547,7 +547,9 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--connected", required=True)
     p.add_argument("--business", required=True)
     p.add_argument("--lang", choices=["pt", "en"], default="pt")
-    p.add_argument("--harness", choices=["claude-code", "claude-desktop", "codex", "antigravity"])
+    p.add_argument(
+        "--harness", choices=["claude-code", "claude-desktop", "codex", "antigravity", "api"]
+    )
     p.add_argument("--admin", required=True)
     p.add_argument("--admin-name")
     p.add_argument("--confirm-connected", action="store_true")
@@ -618,7 +620,7 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--contact", required=True)
     add("purge")
     p = add("run", now=False)
-    p.add_argument("--harness", choices=["claude-code", "codex"], required=True)
+    p.add_argument("--harness", choices=["claude-code", "codex", "api"], required=True)
     p.add_argument("--interval", type=int, default=20)
     p.add_argument("--once", action="store_true")
     p.add_argument("--model")

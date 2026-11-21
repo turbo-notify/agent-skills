@@ -10,6 +10,7 @@ canaries; see the spec, Outcomes S2).
 from __future__ import annotations
 
 import json
+import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,11 +23,11 @@ ADMIN_READ_TOOLS = (
     "list_groups", "get_group", "list_numbers", "get_number", "get_message_quota",
     "get_contact_quota", "get_usage", "list_events",
 )  # fmt: skip
-SUPPORTED = ("claude-code", "codex")
+SUPPORTED = ("claude-code", "codex", "api")
 Role = Literal["contact", "compaction", "admin", "attendant"]
-Harness = Literal["claude-code", "codex"]
+Harness = Literal["claude-code", "codex", "api"]
 _KEEP = ("HOME", "PATH", "LANG", "LC_ALL", "TMPDIR", "USER", "LOGNAME", "SHELL", "TERM")
-_KEEP_PREFIXES = ("ANTHROPIC_", "OPENAI_", "CLAUDE_CONFIG", "XDG_")
+_KEEP_PREFIXES = ("ANTHROPIC_", "OPENAI_", "CLAUDE_CONFIG", "XDG_", "TN_LLM_")
 _CODEX_FEATURES_OFF = (
     "shell_tool", "unified_exec", "apps", "code_mode_host", "multi_agent", "goals",
     "image_generation", "plugins", "hooks", "skill_search",
@@ -76,6 +77,8 @@ def build_child(
         if not key:
             raise ValueError("an administrator process needs the API key")
         env[KEY_ENV] = key
+    if harness == "api":
+        return _api(role, prompt, cwd, mcp_url, env, model)
     if harness == "claude-code":
         return _claude(role, prompt, scratch, cwd, mcp_url, env, model)
     return _codex(role, prompt, scratch, cwd, mcp_url, env, base_env, model)
@@ -158,3 +161,27 @@ def _codex(
         argv += ["-m", model]
     env["CODEX_HOME"] = str(home)
     return Child(argv, env, cwd, prompt, out)
+
+
+def _api(
+    role: Role,
+    prompt: str,
+    cwd: Path,
+    mcp_url: str,
+    env: dict[str, str],
+    model: str | None,
+) -> Child:
+    """A plain Python process that calls a model over HTTP: no agent program, no shell, no files.
+
+    It is the harness for a server or a container (nothing to log in to, nothing to keep open).
+    The model is whatever ``TN_LLM_MODEL`` names; ``--model`` overrides it.
+    """
+    argv = [sys.executable, "-m", "tn_assist.llm_child"]
+    if _has_tools(role):
+        argv.append("--tools")
+        env["TN_MCP_URL"] = mcp_url
+    if model:
+        env["TN_LLM_MODEL"] = model
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parent.parent)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return Child(argv, env, cwd, prompt)

@@ -381,8 +381,8 @@ def test_every_listing_description_says_whatsapp_and_does_not_open_with_the_prod
     for where, text in _shop_window_descriptions().items():
         assert "WhatsApp" in text, f"{where} does not say WhatsApp"
         if where.endswith("interface.longDescription"):
-            # The OpenAI review text (tools/openai_listing.json): it names the product but the same
-            # sentence carries the WhatsApp function, so rule 2 holds; do not edit it while in review.
+            # The OpenAI review text (tools/openai_listing.json): it names the product but the
+            # same sentence carries the WhatsApp function, so rule 2 holds.
             continue
         assert not text.startswith("Turbo Notify"), f"{where} opens with the product name"
 

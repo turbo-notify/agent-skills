@@ -271,7 +271,7 @@ def _log(ws: Workspace, event: str, **fields: Any) -> None:
 
 
 def check_harness(harness: str) -> None:
-    if harness not in ("claude-code", "codex"):
+    if harness not in ("claude-code", "codex", "api"):
         raise UnsupportedHarness(harness)
 
 
