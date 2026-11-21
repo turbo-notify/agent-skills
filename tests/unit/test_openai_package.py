@@ -169,7 +169,7 @@ def test_the_manifest_has_the_listing_the_review_and_the_publication(archive: Pa
     block = listing_manifest(archive)["extensions"]["com.openai"]
     interface = block["interface"]
     assert interface["displayName"] == "WhatsApp by Turbo Notify"  # ADR 2026-11-13, 4th amendment
-    assert interface["category"] == "Productivity"
+    assert interface["category"] == "Communication"
     assert interface["composerIcon"] == interface["logo"] == "./assets/icon.png"
     cases = block["review"]["test_cases"]
     assert (len(cases["positive"]), len(cases["negative"])) == (5, 3)
@@ -193,11 +193,19 @@ def test_the_listing_is_found_by_whatsapp_and_usable_on_the_first_try(archive: P
     assert not any("attendant" in prompt.lower() for prompt in prompts)
     long_text = interface["longDescription"]
     assert long_text.startswith("Send and read WhatsApp")
+    # What the store shows beyond the text (spec 2026-11-21): the category the competitors use, the
+    # brand color, descriptive capabilities, the publisher the owner asked for, independence.
+    assert interface["developerName"] == "MENUR Tecnologia"
+    assert interface["category"] == "Communication"
+    assert interface["brandColor"] == "#20A57F"
+    assert len(interface["capabilities"]) >= 6 and "Read" not in interface["capabilities"]
+    assert all(len(label) <= 60 for label in interface["capabilities"])
     for fact in (
         "https://dashboard.turbonotify.com/auth/signup",  # where to get the account
         "one hour by default",  # how long the text of received messages is kept
         "every 14 days",  # WhatsApp ends the link after 14 days without use of the phone
-        "In ChatGPT you get the tools above, not the attendant",
+        "In ChatGPT you get these tools; the virtual attendant is not available there",
+        "not affiliated with, endorsed by or sponsored by WhatsApp or Meta",
     ):
         assert fact in long_text, f"the long description does not say: {fact}"
     translated = block["publication"]["translations"]["pt-BR"]["description"]
@@ -205,7 +213,8 @@ def test_the_listing_is_found_by_whatsapp_and_usable_on_the_first_try(archive: P
         "https://dashboard.turbonotify.com/auth/signup",
         "uma hora por padrão",
         "a cada 14 dias",
-        "No ChatGPT você tem as ferramentas acima, não o atendente",
+        "No ChatGPT você tem essas ferramentas; o atendente virtual não está disponível lá",
+        "não é afiliado, endossado nem patrocinado pelo WhatsApp ou pela Meta",
     ):
         assert fact in translated, f"the pt-BR description does not say: {fact}"
     for text in (long_text, translated, *prompts):

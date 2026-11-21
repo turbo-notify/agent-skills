@@ -2,12 +2,18 @@
   "interface": {
     "displayName": "WhatsApp by Turbo Notify",
     "shortDescription": "WhatsApp for your business",
-    "longDescription": "Send and read WhatsApp messages from your AI agent, using your own WhatsApp number. Ask it to message a customer, send a photo, a location or a calendar invitation and see who accepted it, check whether a message was delivered or read, look at recent chats and groups, and see how much of your plan is left.\n\nGood first requests: send a message to your own number to test, ask what your customers wrote in the last hour and have replies drafted, or ask which number is connected.\n\nBefore you start: you need a Turbo Notify account with your WhatsApp number linked in the dashboard (you scan a QR code with the phone). Create the account at https://dashboard.turbonotify.com/auth/signup?locale=en. The first time you use the plugin, sign in with that account and choose what the agent may do, for example sending. To keep the number linked, open WhatsApp on that phone at least every 14 days.\n\nGood to know: Turbo Notify keeps the text of received messages for a short time, one hour by default, so ask about recent messages.\n\nThe plugin also includes the virtual attendant, a skill that answers your customers on WhatsApp from what you teach it about your business and hands the conversation to a person when it cannot help. It runs on your computer with Codex, keeps its notes in a folder you own, and starts in a mode where you approve every answer. It only answers while Codex is running on your computer. In ChatGPT you get the tools above, not the attendant.\n\nThe plugin works only with Turbo Notify.",
-    "developerName": "MENUR TECNOLOGIA LTDA",
-    "category": "Productivity",
+    "longDescription": "Send and read WhatsApp messages from your AI agent, using your own WhatsApp number.\n\nWhat you can do\nSend WhatsApp messages to a customer: text, photos, videos, documents, locations and contact cards. Send a calendar invitation and see who accepted it. Reply to, react to, edit or delete a message you sent. Check whether a message was delivered or read. Look at recent chats, groups and contacts. See how much of your plan is left.\n\nGood first requests\nSend a message to your own number to test. Ask what your customers wrote in the last hour and have replies drafted. Ask which number is connected.\n\nBefore you start\nYou need a Turbo Notify account with your WhatsApp number linked in the dashboard (you scan a QR code with the phone). Create the account at https://dashboard.turbonotify.com/auth/signup?locale=en. The first time you use the plugin, sign in with that account and choose what the agent may do, for example sending. To keep the number linked, open WhatsApp on that phone at least every 14 days.\n\nGood to know\nTurbo Notify keeps the text of received messages for a short time, one hour by default, so ask about recent messages. In ChatGPT you get these tools; the virtual attendant is not available there.\n\nVirtual attendant (Codex)\nThe plugin also includes the virtual attendant, a skill that answers your customers on WhatsApp from what you teach it about your business and hands the conversation to a person when it cannot help. It runs on your computer with Codex, keeps its notes in a folder you own, and starts in a mode where you approve every answer. It only answers while Codex is running on your computer.\n\nThis plugin is independent: it is not affiliated with, endorsed by or sponsored by WhatsApp or Meta. It works only with Turbo Notify.",
+    "developerName": "MENUR Tecnologia",
+    "category": "Communication",
     "capabilities": [
-      "Read",
-      "Write"
+      "Send WhatsApp text, photos, videos and documents",
+      "Send locations and contact cards",
+      "Send calendar invitations and see who accepted",
+      "Reply, react, edit and delete sent messages",
+      "Read recent chats, groups and contacts",
+      "Check delivery and read status",
+      "Check your message allowance",
+      "Run a WhatsApp virtual attendant in Codex"
     ],
     "websiteURL": "https://turbonotify.com/en",
     "supportURL": "https://docs.turbonotify.com/en/help/support/",
@@ -19,7 +25,8 @@
       "Which of my WhatsApp numbers is connected, and how many messages can I still send?"
     ],
     "composerIcon": "./assets/icon.png",
-    "logo": "./assets/icon.png"
+    "logo": "./assets/icon.png",
+    "brandColor": "#20A57F"
   },
   "review": {
     "test_cases": {
@@ -74,11 +81,11 @@
   },
   "publication": {
     "countries": [],
-    "release_notes": "Listing update: the name starts with WhatsApp, the description says what to ask first and what is needed before starting, and the starter prompts all work in ChatGPT.",
+    "release_notes": "Listing update: the name starts with WhatsApp, the category is Communication, the description says what you can do, what is needed before starting and that the plugin is independent, and the starter prompts all work in ChatGPT.",
     "translations": {
       "pt-BR": {
         "subtitle": "WhatsApp para a sua empresa",
-        "description": "Envie e leia mensagens de WhatsApp pelo seu agente de IA, com o seu próprio número. Peça para ele mandar uma mensagem a um cliente, enviar uma foto, uma localização ou um convite de calendário e ver quem aceitou, conferir se uma mensagem foi entregue ou lida, ver as conversas e os grupos recentes e saber quanto falta do seu plano.\n\nBons primeiros pedidos: enviar uma mensagem para o seu próprio número para testar, ver o que os clientes escreveram na última hora e rascunhar as respostas, ou perguntar qual número está conectado.\n\nAntes de começar: você precisa de uma conta Turbo Notify com o seu número de WhatsApp conectado no painel (você lê um QR code com o celular). Crie a conta em https://dashboard.turbonotify.com/auth/signup?locale=pt-BR. Na primeira vez que usar o plugin, entre com essa conta e escolha o que o agente pode fazer, por exemplo enviar. Para manter o número conectado, abra o WhatsApp nesse celular pelo menos a cada 14 dias.\n\nBom saber: o Turbo Notify guarda o texto das mensagens recebidas por pouco tempo, uma hora por padrão, então pergunte pelas mensagens recentes.\n\nO plugin inclui também o atendente virtual, uma skill que responde seus clientes no WhatsApp com o que você ensinou sobre o seu negócio e passa a conversa para uma pessoa quando não consegue ajudar. Ele roda no seu computador com o Codex, guarda as anotações numa pasta sua e começa no modo em que você aprova cada resposta. Só responde enquanto o Codex estiver aberto no seu computador. No ChatGPT você tem as ferramentas acima, não o atendente.\n\nO plugin funciona apenas com o Turbo Notify."
+        "description": "Envie e leia mensagens de WhatsApp pelo seu agente de IA, com o seu próprio número.\n\nO que você pode fazer\nEnviar mensagens de WhatsApp a um cliente: texto, fotos, vídeos, documentos, localizações e cartões de contato. Enviar um convite de calendário e ver quem aceitou. Responder, reagir, editar ou apagar uma mensagem que você enviou. Conferir se uma mensagem foi entregue ou lida. Ver as conversas, os grupos e os contatos recentes. Saber quanto falta do seu plano.\n\nBons primeiros pedidos\nEnviar uma mensagem para o seu próprio número para testar. Ver o que os clientes escreveram na última hora e rascunhar as respostas. Perguntar qual número está conectado.\n\nAntes de começar\nVocê precisa de uma conta Turbo Notify com o seu número de WhatsApp conectado no painel (você lê um QR code com o celular). Crie a conta em https://dashboard.turbonotify.com/auth/signup?locale=pt-BR. Na primeira vez que usar o plugin, entre com essa conta e escolha o que o agente pode fazer, por exemplo enviar. Para manter o número conectado, abra o WhatsApp nesse celular pelo menos a cada 14 dias.\n\nBom saber\nO Turbo Notify guarda o texto das mensagens recebidas por pouco tempo, uma hora por padrão, então pergunte pelas mensagens recentes. No ChatGPT você tem essas ferramentas; o atendente virtual não está disponível lá.\n\nAtendente virtual (Codex)\nO plugin inclui também o atendente virtual, uma skill que responde seus clientes no WhatsApp com o que você ensinou sobre o seu negócio e passa a conversa para uma pessoa quando não consegue ajudar. Ele roda no seu computador com o Codex, guarda as anotações numa pasta sua e começa no modo em que você aprova cada resposta. Só responde enquanto o Codex estiver aberto no seu computador.\n\nEste plugin é independente: não é afiliado, endossado nem patrocinado pelo WhatsApp ou pela Meta. Ele funciona apenas com o Turbo Notify."
       }
     }
   }
