@@ -195,7 +195,8 @@ def test_the_listing_is_found_by_whatsapp_and_usable_on_the_first_try(archive: P
     assert long_text.startswith("Send and read WhatsApp")
     # What the store shows beyond the text (spec 2026-11-21): the category the competitors use, the
     # brand color, descriptive capabilities, the publisher the owner asked for, independence.
-    assert interface["developerName"] == "MENUR Tecnologia"
+    # The exact legal name of the verified identity and of the privacy policy and terms.
+    assert interface["developerName"] == "MENUR Tecnologia LTDA"
     assert interface["category"] == "Communication"
     assert interface["brandColor"] == "#20A57F"
     assert len(interface["capabilities"]) >= 6 and "Read" not in interface["capabilities"]
