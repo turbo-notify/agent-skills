@@ -618,18 +618,22 @@ class _Context:
             if ln.at
         )
 
-    def _with_disclosure(self, text: str) -> str:
-        """The customer is told, in the first answer of each chat, that it comes from an AI.
+    def _notice_is_on(self) -> bool:
+        return load_config(self.ws).get("ai_notice") is True
 
-        Trusted code adds it, never the model: a decision cannot leave it out, and the egress
-        check has already passed the text it precedes.
+    def _with_disclosure(self, text: str) -> str:
+        """When the business turned it on, the first answer of each chat says it comes from an AI.
+
+        Off by default (the owner finds it tiresome). Trusted code adds it, never the model, and
+        the egress check has already passed the text it precedes. Off or on, the assistant never
+        says it is a person: asked, it says it is a virtual attendant (references/privacy.md).
         """
         notice = t("ai_disclosure", customer_lang(self.ws, self.key))
         return f"{notice}\n\n{text}"
 
     def _emit(self, text: str, *, blocked: bool = False, disclose: bool = True) -> None:
         event_id = self._event_id()
-        if disclose and not blocked and self._opens_a_chat():
+        if disclose and not blocked and self._notice_is_on() and self._opens_a_chat():
             text = self._with_disclosure(text)
         quote_id = self._quote_target()
         action: Action

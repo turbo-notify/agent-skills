@@ -10,7 +10,11 @@ from tn_assist.paths import Workspace
 from tn_assist.store import write_json_atomic
 
 
-def make_workspace(tmp_path: Path, *, admins: tuple[str, ...] = (f.OWNER,)) -> Workspace:
+def make_workspace(
+    tmp_path: Path, *, admins: tuple[str, ...] = (f.OWNER,), ai_notice: bool = True
+) -> Workspace:
+    """A bound workspace. The AI notice is ON here so the many tests that read what a customer
+    receives keep covering it; the shipped default is OFF (see test_ai_notice.py)."""
     ws = Workspace.open(tmp_path, f.ORG, f.NUM, create=True)
     save_config(
         ws,
@@ -20,6 +24,7 @@ def make_workspace(tmp_path: Path, *, admins: tuple[str, ...] = (f.OWNER,)) -> W
             "connected_number": f.CONNECTED,
             "lang": "pt",
             "mode": "assist",
+            "ai_notice": ai_notice,
         },
     )
     write_json_atomic(

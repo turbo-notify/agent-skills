@@ -334,6 +334,7 @@ def cmd_status(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
         "mode": config.get("mode"),
         "paused": bool(config.get("paused")),
         "lang": config.get("lang"),
+        "ai_notice": config.get("ai_notice") is True,
         "pending": pending_count(ws),
         "waiting_for_a_person": len(queue_entries(ws)),
         "last_tick_at": cursor.get("last_tick_at") if isinstance(cursor, dict) else None,
@@ -431,6 +432,10 @@ def cmd_kb_write(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
 
 def cmd_set(ws: Workspace, args: argparse.Namespace) -> dict[str, Any]:
     config = load_config(ws)
+    if args.setting == "ai-notice":
+        config["ai_notice"] = args.value == "on"
+        save_config(ws, config)
+        return {"ai_notice": config["ai_notice"]}
     config[args.setting] = args.value
     save_config(ws, config)
     return {args.setting: args.value}
@@ -607,9 +612,10 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--visibility", choices=["public", "internal"], required=True)
     p.add_argument("--description", required=True)
     p.add_argument("--from-file", required=True)
-    for setting in ("mode", "lang"):
+    choices = {"mode": ["auto", "assist"], "lang": ["pt", "en"], "ai-notice": ["on", "off"]}
+    for setting, values in choices.items():
         p = add(setting, now=False)
-        p.add_argument("value", choices=["auto", "assist"] if setting == "mode" else ["pt", "en"])
+        p.add_argument("value", choices=values)
     p = add("version-check")
     p.add_argument("--latest-json")
     p.add_argument("--announce", action="store_true")
@@ -678,7 +684,7 @@ def main(
                 ws = Workspace.open(Path(base), org, number, create=False)
             except (FileNotFoundError, InvalidWorkspaceId) as error:
                 raise CliError("no_workspace", "run init first") from error
-            if args.command in ("mode", "lang"):
+            if args.command in ("mode", "lang", "ai-notice"):
                 args.setting = args.command
                 payload = cmd_set(ws, args)
             else:

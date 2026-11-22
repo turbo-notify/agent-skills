@@ -161,6 +161,7 @@ def test_the_whole_loop_ingest_next_pack_apply(tmp_path: Path) -> None:
 def test_auto_mode_replies_directly(tmp_path: Path) -> None:
     init(tmp_path)
     run(tmp_path, "mode", "auto")
+    run(tmp_path, "ai-notice", "on")
     run(tmp_path, "cursor", "--set", "evt_" + "0" * 32)
     event = f.inbound_text(preview="oi")
     run(tmp_path, "ingest", "--file", write(tmp_path / "e.json", f.payload(event)), "--now", NOW)

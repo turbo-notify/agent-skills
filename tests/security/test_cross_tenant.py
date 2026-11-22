@@ -31,6 +31,7 @@ def tenant(
             "connected_number": f.CONNECTED,
             "lang": "pt",
             "mode": "auto",
+            "ai_notice": True,
             "business_name": marker,
         },
     )

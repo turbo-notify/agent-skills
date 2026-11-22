@@ -30,4 +30,4 @@ Administrators teach the business and change prices from WhatsApp with the conso
 
 - It does not survive losing the folder: use a volume or a disk that is backed up. A host that wipes the disk on restart answers again from zero and hands customers over to a person.
 - The model sees the customer's message and the business knowledge, so the model provider receives them: choose it with that in mind and say so in the privacy notice ([privacy.md](privacy.md)).
-- Tested in a clean container with a stand-in model and a stand-in Turbo Notify API; run one real turn with your own model key before relying on it.
+- Tested in a clean container with a stand-in model and API, and once (2026-11-21) against the real Turbo Notify API and a real model on Groq (`openai/gpt-oss-120b`): a customer was answered from the knowledge, and a question it could not answer became a hand-off. Model names are retired over time (`llama-3.3-70b-versatile` already is): list the ones your key can use with `GET <TN_LLM_BASE_URL>/models`. Not tried: a run of days, many customers at once.

@@ -187,6 +187,9 @@ def create_workspace(shop: Shop, base: Path) -> Workspace:
         )
     config = load_config(ws)
     config["mode"] = "auto"
+    # On in the evaluation only: the checker reads the language of the answer from that line.
+    # The shipped default is off; `strip_disclosure` handles an answer with or without it.
+    config["ai_notice"] = True
     save_config(ws, config)
     return ws
 

@@ -19,6 +19,7 @@ English:
 - Retention of the transcript: `raw_retention_days` in `memory-policy.json`, 90 by default. `tn_assist purge` applies it.
 - Export: `tn_assist export --contact <number>`. Erase: `/esquecer <number>` or `tn_assist forget --contact <number>`. The erase leaves one line in the audit log (who, which number, when), and nothing else about the customer.
 - The assistant never says it is a person. Asked, it says it is a virtual attendant.
+- By default the first answer of a chat does not announce that it is an AI (`tn_assist ai-notice on` adds one line, in the customer's language). The business decides, and it is the business that answers for what its assistant says. Some places require the notice for automated answers: check before leaving it off.
 - It does not write to customers who have not written first, and it stops for anyone who asks.
 
 ## What to tell the person
