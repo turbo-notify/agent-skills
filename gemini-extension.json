@@ -1,6 +1,6 @@
 {
   "name": "turbo-notify",
-  "version": "1.5.14",
+  "version": "1.5.15",
   "description": "Connect your WhatsApp number to the Gemini CLI so an agent can send and read your WhatsApp messages. Not yet tested in the Gemini CLI. Sign in with your Turbo Notify account.",
   "mcpServers": {
     "turbo-notify": {

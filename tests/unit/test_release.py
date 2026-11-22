@@ -221,7 +221,7 @@ def test_codex_shows_the_brand_icon_not_a_placeholder() -> None:
     data = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())
     for key in ("logo", "composerIcon"):
         assert (ROOT / ".codex-plugin" / ".." / data["interface"][key]).resolve().is_file()
-    assert data["interface"]["logo"] == "./assets/icon.png"
+    assert data["interface"]["logo"] == "./assets/icon-avatar.png"
     assert data["mcpServers"] == "./.mcp.json"
     assert data["skills"] == release.SKILLS
 

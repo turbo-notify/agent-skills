@@ -35,6 +35,7 @@ def test_the_archive_holds_the_manifest_the_skill_and_the_icon(archive: Path) ->
         "plugin.json",
         f"{SKILL}/SKILL.md",
         "assets/icon.png",
+        "assets/icon-avatar.png",
         "LICENSE",
     } <= found
     with zipfile.ZipFile(archive) as z:
@@ -170,11 +171,12 @@ def test_the_manifest_has_the_listing_the_review_and_the_publication(archive: Pa
     interface = block["interface"]
     assert interface["displayName"] == "WhatsApp by Turbo Notify"  # ADR 2026-11-13, 4th amendment
     assert interface["category"] == "Communication"
-    assert interface["composerIcon"] == interface["logo"] == "./assets/icon.png"
+    assert interface["composerIcon"] == interface["logo"] == "./assets/icon-avatar.png"
     cases = block["review"]["test_cases"]
     assert (len(cases["positive"]), len(cases["negative"])) == (5, 3)
     assert block["publication"]["countries"] == []  # worldwide: an empty list lifts the restriction
     assert pkg._png_size(zipfile.ZipFile(archive).read("assets/icon.png")) == (512, 512)
+    assert pkg._png_size(zipfile.ZipFile(archive).read("assets/icon-avatar.png")) == (1024, 1024)
 
 
 def test_the_listing_is_found_by_whatsapp_and_usable_on_the_first_try(archive: Path) -> None:

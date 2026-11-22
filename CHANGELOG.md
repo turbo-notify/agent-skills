@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.15
+
+- OpenAI and Codex listing: the logo and the composer icon are now the Turbo Notify avatar (`assets/icon-avatar.png`, 1024 by 1024, the speech bubble and bolt on the green gradient) instead of the bare mark on a transparent background. It stays readable from 16 to 64 pixels, on light and dark pages, in a rounded-square and a circular crop. The other marketplaces keep `assets/icon.png`.
+
 ## 1.5.14
 
 - Virtual attendant: the first answer of a chat no longer announces that it comes from an AI by default. The business decides: `tn_assist ai-notice on` brings the line back (in the customer's language, added by code and never by the model) and `ai-notice off` removes it; `status` shows the choice. The assistant still never says it is a person and, asked, says it is a virtual attendant. The privacy notice tells the business that some places require the line for automated answers.

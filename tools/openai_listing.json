@@ -24,8 +24,8 @@
       "Show the WhatsApp messages my customers sent in the last hour and draft a reply to each.",
       "Which of my WhatsApp numbers is connected, and how many messages can I still send?"
     ],
-    "composerIcon": "./assets/icon.png",
-    "logo": "./assets/icon.png",
+    "composerIcon": "./assets/icon-avatar.png",
+    "logo": "./assets/icon-avatar.png",
     "brandColor": "#20A57F"
   },
   "review": {

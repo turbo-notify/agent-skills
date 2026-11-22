@@ -55,7 +55,7 @@ MCP_SCHEMA_URL = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
 MCP_SERVER_KEYS = ("type", "url", "headers")
 
 # Files of the working tree that go into the archive, as paths relative to the root.
-INCLUDE_FILES = ("assets/icon.png", "LICENSE")
+INCLUDE_FILES = ("assets/icon.png", "assets/icon-avatar.png", "LICENSE")
 # Keys of the repository manifest that only another vendor's runtime reads.
 CLAUDE_STYLE_KEYS = (
     "icon",
