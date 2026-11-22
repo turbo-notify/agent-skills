@@ -368,3 +368,14 @@ def test_the_helper_runs_from_an_empty_folder(archive: Path, tmp_path: Path) -> 
     )
     assert done.returncode == 0, done.stderr
     assert "ingest" in done.stdout
+
+
+def test_the_listing_points_to_the_documentation_in_both_languages() -> None:
+    """The directory has no documentation field (only website, support, privacy, terms), so the
+    link is in the text, in the reader's language (owner request, 2026-11-22)."""
+    block = json.loads((ROOT / "tools" / "openai_listing.json").read_text(encoding="utf-8"))
+    assert (
+        "https://docs.turbonotify.com/en/agents/chatgpt/" in block["interface"]["longDescription"]
+    )
+    translated = block["publication"]["translations"]["pt-BR"]["description"]
+    assert "https://docs.turbonotify.com/agents/chatgpt/" in translated
