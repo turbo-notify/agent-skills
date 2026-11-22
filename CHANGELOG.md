@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.14
+
+- Virtual attendant: the first answer of a chat no longer announces that it comes from an AI by default. The business decides: `tn_assist ai-notice on` brings the line back (in the customer's language, added by code and never by the model) and `ai-notice off` removes it; `status` shows the choice. The assistant still never says it is a person and, asked, says it is a virtual attendant. The privacy notice tells the business that some places require the line for automated answers.
+- Virtual attendant: a new harness, `api` (`tn_assist run --harness api`), runs the unattended runner on a server or in a container with no agent program and no login. Each model turn is one HTTP call to any OpenAI-compatible model (`TN_LLM_API_KEY`, `TN_LLM_MODEL`, `TN_LLM_BASE_URL`); a customer turn has no tool and no Turbo Notify key, an administrator turn only the read tools. `assets/cloud/Dockerfile` builds the container and `references/harness-api.md` explains it. Proven in a clean container and once against the real API and a real model.
+- Fix: the model child names itself `tn-assist-api/1`, because Groq answered 403 to Python's default agent name.
+
 ## 1.5.13
 
 - Version: the plugin now carries the version 1.5.13 in every manifest (Claude Code, Codex, Antigravity, Gemini CLI), in `latest.json`, in the helper and in `pyproject.toml`. The number follows the scheme the owner chose for every public Turbo Notify package, so it jumps from 0.3.4 without the versions in between; the contents are the same as 0.3.4.
