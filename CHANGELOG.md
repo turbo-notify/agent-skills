@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.16
+
+- OpenAI listing: the developer is shown as just "Menur", written like that, instead of the full company name, which took too much room on the listing for no gain.
+
 ## 1.5.15
 
 - OpenAI and Codex listing: the logo and the composer icon are now the Turbo Notify avatar (`assets/icon-avatar.png`, 1024 by 1024, the speech bubble and bolt on the green gradient) instead of the bare mark on a transparent background. It stays readable from 16 to 64 pixels, on light and dark pages, in a rounded-square and a circular crop. The other marketplaces keep `assets/icon.png`.
