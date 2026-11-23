@@ -175,7 +175,9 @@ def test_the_manifest_has_the_listing_the_review_and_the_publication(archive: Pa
     cases = block["review"]["test_cases"]
     assert (len(cases["positive"]), len(cases["negative"])) == (5, 3)
     assert block["publication"]["countries"] == []  # worldwide: an empty list lifts the restriction
-    assert pkg._png_size(zipfile.ZipFile(archive).read("assets/icon.png")) == (512, 512)
+    assert zipfile.ZipFile(archive).read("assets/icon.png") == zipfile.ZipFile(archive).read(
+        "assets/icon-avatar.png"
+    )  # the connector icon of ChatGPT is read from the conventional name
     assert pkg._png_size(zipfile.ZipFile(archive).read("assets/icon-avatar.png")) == (1024, 1024)
 
 

@@ -253,6 +253,10 @@ def _mcp_file(root: Path) -> bytes:
 def members(root: Path = ROOT, demo_url: str | None = None) -> dict[str, bytes]:
     """The archive content: relative path to bytes, already rewritten."""
     content = {rel: _rewrite(rel, (root / rel).read_bytes()) for rel in _collect(root)}
+    # The portal drew the connector ("Aplicativo" on the plugin page, the card of its MCP tab)
+    # from the conventional assets/icon.png of the archive (the bare mark of the other
+    # marketplaces), not from the listing block. In this archive that name carries the avatar.
+    content["assets/icon.png"] = content["assets/icon-avatar.png"]
     content[MANIFEST] = _manifest(root, demo_url)
     content[MCP_FILE] = _mcp_file(root)
     return content
