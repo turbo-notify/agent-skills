@@ -72,7 +72,11 @@ POSITIVE_CASES, NEGATIVE_CASES = 5, 3
 URL_KEYS = ("websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL")
 REVIEWER_KEYS = ("test_credentials", "reviewer_instructions")
 DASHES = re.compile("[–—]")
-INCLUDE_TREES = (SKILL,)
+# The attendant and the two skills that guide an agent through the WhatsApp tools in a chat.
+CHAT_SKILLS = tuple(
+    f"skills/{name}" for name in ("get-started-with-whatsapp", "send-whatsapp-messages")
+)
+INCLUDE_TREES = (SKILL, *CHAT_SKILLS)
 # Inside the skill, what belongs to another vendor's runtime.
 EXCLUDE_FILES = frozenset(
     {
@@ -107,6 +111,14 @@ def _row(label: str) -> str:
 
 
 REPLACEMENTS: tuple[Replacement, ...] = (
+    Replacement(
+        f"{SKILL}/SKILL.md",
+        "Needs the Turbo Notify MCP server to be connected.\n",
+        "It runs with Codex on the person's computer or on a server they control, never inside a "
+        "ChatGPT conversation: in ChatGPT, do not start setting it up, say where it runs and offer "
+        "what the chat can do (read messages, draft replies, send on request). "
+        "Needs the Turbo Notify MCP server to be connected.\n",
+    ),
     Replacement(
         f"{SKILL}/SKILL.md",
         "then the file for your harness: [Claude Code](references/harness-claude-code.md), "
@@ -221,11 +233,29 @@ def _rewrite(rel: str, data: bytes) -> bytes:
     return text.encode("utf-8")
 
 
-def _manifest(root: Path, demo_url: str | None) -> bytes:
+def _merge(base: Any, overlay: Any) -> Any:
+    """``overlay`` laid over ``base``: objects merge key by key, everything else (strings, lists)
+    is replaced whole, so a list is never merged by index."""
+    if isinstance(base, dict) and isinstance(overlay, dict):
+        return {**base, **{k: _merge(base.get(k), v) for k, v in overlay.items()}}
+    return overlay
+
+
+def _manifest(
+    root: Path,
+    demo_url: str | None,
+    overlay: dict[str, Any] | None = None,
+    archive_version: str | None = None,
+) -> bytes:
     """The archive manifest in the Agent Plugins shape: the repository one, reduced to the keys
-    that schema allows, with the developer name as author and the OpenAI listing block (D8)."""
+    that schema allows, with the developer name as author and the OpenAI listing block (D8).
+
+    A listing trial passes an ``overlay`` over the listing and an ``archive_version`` that only
+    the archive carries: the repository files stay as they are."""
     source = json.loads((root / SOURCE_MANIFEST).read_text(encoding="utf-8"))
     listing = json.loads((root / LISTING).read_text(encoding="utf-8"))
+    if overlay:
+        listing = _merge(listing, overlay)
     interface = listing["interface"]
     manifest: dict[str, Any] = {"$schema": SCHEMA_URL}
     for key in AGENT_PLUGIN_KEYS:
@@ -235,6 +265,8 @@ def _manifest(root: Path, demo_url: str | None) -> bytes:
     if demo_url:
         listing["review"]["demo_recording_url"] = demo_url
     manifest["extensions"] = {"com.openai": listing}
+    if archive_version:
+        manifest["version"] = archive_version
     return (json.dumps(manifest, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
 
 
@@ -250,14 +282,19 @@ def _mcp_file(root: Path) -> bytes:
     return (json.dumps(document, indent=2) + "\n").encode("utf-8")
 
 
-def members(root: Path = ROOT, demo_url: str | None = None) -> dict[str, bytes]:
+def members(
+    root: Path = ROOT,
+    demo_url: str | None = None,
+    overlay: dict[str, Any] | None = None,
+    archive_version: str | None = None,
+) -> dict[str, bytes]:
     """The archive content: relative path to bytes, already rewritten."""
     content = {rel: _rewrite(rel, (root / rel).read_bytes()) for rel in _collect(root)}
     # The portal drew the connector ("Aplicativo" on the plugin page, the card of its MCP tab)
     # from the conventional assets/icon.png of the archive (the bare mark of the other
     # marketplaces), not from the listing block. In this archive that name carries the avatar.
     content["assets/icon.png"] = content["assets/icon-avatar.png"]
-    content[MANIFEST] = _manifest(root, demo_url)
+    content[MANIFEST] = _manifest(root, demo_url, overlay, archive_version)
     content[MCP_FILE] = _mcp_file(root)
     return content
 
@@ -502,15 +539,38 @@ def write_archive(content: dict[str, bytes], out: Path) -> str:
     return hashlib.sha256(out.read_bytes()).hexdigest()
 
 
+ARCHIVE_VERSION = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.]+)?$")
+
+
+def _check_trial(overlay: dict[str, Any] | None, archive_version: str | None, ver: str) -> None:
+    """A listing trial carries a text overlay AND its own version, higher than the repository's:
+    the portal cannot take the same number twice, and nothing public moves (trial plan, E0)."""
+    if overlay is None and archive_version is None:
+        return
+    match = ARCHIVE_VERSION.match(archive_version or "")
+    current = tuple(int(part) for part in ver.split("-")[0].split("."))
+    if not overlay or not match or tuple(int(g) for g in match.groups()) <= current:
+        raise PackageError(
+            f"a listing trial needs an overlay and an archive version higher than {ver} "
+            f"(got archive version {archive_version!r})"
+        )
+
+
 def build(
-    root: Path = ROOT, out: Path | None = None, demo_url: str | None = None
+    root: Path = ROOT,
+    out: Path | None = None,
+    demo_url: str | None = None,
+    listing_overlay: dict[str, Any] | None = None,
+    archive_version: str | None = None,
 ) -> tuple[Path, str]:
     ver = version(root)
-    content = members(root, demo_url)
-    found = problems(content, ver)
+    _check_trial(listing_overlay, archive_version, ver)
+    shipped = archive_version or ver
+    content = members(root, demo_url, listing_overlay, archive_version)
+    found = problems(content, shipped)
     if found:
         raise PackageError("; ".join(found))
-    target = out or root / "dist" / f"turbo-notify-openai-{ver}.zip"
+    target = out or root / "dist" / f"turbo-notify-openai-{shipped}.zip"
     return target, write_archive(content, target)
 
 
@@ -518,9 +578,30 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="openai_package")
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--demo-url", default=None, help="HTTPS URL of the review demo video")
+    parser.add_argument(
+        "--listing-overlay",
+        type=Path,
+        default=None,
+        help="JSON laid over tools/openai_listing.json, kept outside the repository",
+    )
+    parser.add_argument(
+        "--archive-version",
+        default=None,
+        help="version only the archive carries; needed with --listing-overlay, above VERSION",
+    )
     args = parser.parse_args(argv)
     try:
-        path, digest = build(out=args.out, demo_url=args.demo_url)
+        overlay = (
+            json.loads(args.listing_overlay.read_text(encoding="utf-8"))
+            if args.listing_overlay
+            else None
+        )
+        path, digest = build(
+            out=args.out,
+            demo_url=args.demo_url,
+            listing_overlay=overlay,
+            archive_version=args.archive_version,
+        )
     except PackageError as error:
         print(f"openai_package: {error}", file=sys.stderr)
         return 1

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.17
+
+- Skills: two new skills guide an agent through the WhatsApp tools in a chat. `get-started-with-whatsapp` checks the number, explains each status that is not connected (including the 14 days without using the phone), and sends a first test with its delivery check. `send-whatsapp-messages` confirms the recipient and the text before sending, asks before a notice goes to many people, and stops at a quota or an offline number instead of retrying. Checked with the live tool descriptions: without the skills an agent did not mention the 14 day habit and sent a notice to every contact without a test or a consent check.
+- OpenAI listing: the virtual attendant says that it runs with Codex on the person's computer or on a server and not inside a ChatGPT conversation, so ChatGPT stops offering to set it up in the chat. The listing description names WhatsApp in every section and says what the plugin is for in a business.
+
 ## 1.5.16
 
 - OpenAI listing: the developer is shown as just "Menur", written like that, instead of the full company name, which took too much room on the listing for no gain.

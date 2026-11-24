@@ -383,3 +383,43 @@ def test_the_listing_points_to_the_documentation_in_both_languages() -> None:
     )
     translated = block["publication"]["translations"]["pt-BR"]["description"]
     assert "https://docs.turbonotify.com/agents/chatgpt/" in translated
+
+
+def _trial(**overrides):
+    return {"interface": {"longDescription": "Send WhatsApp messages. " * 3, **overrides}}
+
+
+def test_a_listing_trial_changes_only_the_archive(tmp_path: Path) -> None:  # trial plan, E0
+    out = tmp_path / "trial.zip"
+    before = (ROOT / "VERSION").read_text()
+    path, _digest = pkg.build(out=out, listing_overlay=_trial(), archive_version="99.0.0-listing.1")
+    with zipfile.ZipFile(path) as z:
+        manifest = json.loads(z.read("plugin.json"))
+    listing = manifest["extensions"]["com.openai"]["interface"]
+    assert manifest["version"] == "99.0.0-listing.1"
+    assert listing["longDescription"].startswith("Send WhatsApp messages.")
+    assert listing["displayName"] == "WhatsApp by Turbo Notify"  # keys the overlay omits stay
+    assert listing["capabilities"]  # lists are replaced as a whole, never merged by index
+    assert (ROOT / "VERSION").read_text() == before  # the repository is untouched
+
+
+def test_a_listing_trial_needs_its_own_higher_version_and_keeps_every_limit(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(pkg.PackageError, match="archive version"):
+        pkg.build(out=tmp_path / "a.zip", listing_overlay=_trial())
+    for bad in ("1.0.0", "not-a-version", VERSION, "99.0.0 beta"):
+        with pytest.raises(pkg.PackageError, match="archive version"):
+            pkg.build(out=tmp_path / "b.zip", listing_overlay=_trial(), archive_version=bad)
+    with pytest.raises(pkg.PackageError, match="characters"):
+        pkg.build(
+            out=tmp_path / "c.zip",
+            listing_overlay=_trial(longDescription="WhatsApp " * 700),
+            archive_version="99.0.0-listing.1",
+        )
+    with pytest.raises(pkg.PackageError, match="dash"):
+        pkg.build(
+            out=tmp_path / "d.zip",
+            listing_overlay=_trial(longDescription="Send WhatsApp messages — now"),
+            archive_version="99.0.0-listing.1",
+        )
