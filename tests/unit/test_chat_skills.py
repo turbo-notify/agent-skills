@@ -83,6 +83,10 @@ def test_the_facts_the_skills_state_match_the_tools() -> None:
     assert "one hour by default" in first
     send = _text("send-whatsapp-messages")
     assert "get_message_status" in send and "quota" in send
+    # Seen in the real ChatGPT window (2026-11-24): a scheduled send waits for the person's approval
+    # and does not go out alone, while ChatGPT says it will be sent automatically.
+    assert "no scheduling" in send and "still asks the person to allow" in send
+    assert "Never say it will be sent automatically" in send
 
 
 def test_the_openai_archive_carries_the_chat_skills(
