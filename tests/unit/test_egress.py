@@ -289,6 +289,13 @@ def test_the_platforms_own_plan_allowance_or_upgrade_never_goes_to_a_customer(
         "A cota de mensagens do TURBO   NOTIFY acabou neste ciclo.",
         "turbonotify subscription is not active",
         "Desculpe a demora: o limite da assinatura do Turbo Notify foi atingido.",
+        # spelled around the name: punctuation, underscore, letters apart, invisible and
+        # full-width characters
+        "the turbo-notify plan has a message limit",
+        "O limite do Turbo_Notify acabou",
+        "t.u.r.b.o n.o.t.i.f.y: the allowance is used up",
+        "Tur\u200bbo Not\u200bify reached its plan limit",
+        "\uff34\uff35\uff32\uff22\uff2f \uff2e\uff2f\uff34\uff29\uff26\uff39 plan limit reached",
     ):
         result = verdict(ws, text)
         assert not result.ok and "platform_plan" in result.reasons, text
@@ -303,3 +310,14 @@ def test_a_business_may_talk_about_its_own_plans_and_limits(tmp_path: Path) -> N
         "A cota de mensagens SMS do seu plano renova todo dia 5.",
     ):
         assert verdict(ws, text).ok, text
+
+
+def test_publishing_the_platform_name_does_not_switch_the_rule_off(tmp_path: Path) -> None:
+    ws = setup(tmp_path)
+    path = ws.path("knowledge", "company.md")
+    path.write_text(
+        "Loja Aurora, aberta de segunda a sexta. Respondemos pelo WhatsApp com o Turbo Notify.\n",
+        encoding="utf-8",
+    )
+    result = verdict(ws, "O plano do Turbo Notify atingiu o limite de mensagens.")
+    assert not result.ok and "platform_plan" in result.reasons

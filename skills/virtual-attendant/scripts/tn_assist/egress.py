@@ -32,9 +32,11 @@ _MONEY = re.compile(
 MAX_MONEY_DIGITS = 9
 # What the platform says to its own account owner about plans is not for a customer of a number
 # (ADR 2026-11-24, D5). Specific on purpose: the platform name together with a word about a plan,
-# an allowance or an upgrade. The bare words plan and plano are NOT matched, because a business
-# sells plans of its own and its customers must keep reading them.
-_PLATFORM = re.compile(r"\bturbo\s*notify\b")
+# an allowance or an upgrade. The name is looked for without punctuation, space or underscore, so
+# spelling it around does not help. The bare words plan and plano are NOT matched, because a
+# business sells plans of its own and its customers must keep reading them. This guard is depth,
+# not the barrier: the customer turn never holds this information to begin with.
+_PLATFORM_SQUEEZED = "turbonotify"  # compared on the text without punctuation, space or underscore
 _PLAN_TALK = re.compile(
     r"\b(?:plan|plans|plano|planos|assinatura|assinaturas|subscription|subscriptions|cota|cotas"
     r"|quota|quotas|allowance|allowances|limite|limites|limit|limits|upgrade|franquia)\b"
@@ -275,11 +277,9 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
         ):
             reasons.add("non_public")
 
-    if (
-        _PLATFORM.search(folded)
-        and _PLAN_TALK.search(folded)
-        and not _PLATFORM.search(_fold(public_text))  # a reseller may publish its own platform
-    ):
+    # No exemption for a business that publishes the platform name: one mention in its knowledge
+    # must not switch the rule off, and a refusal only becomes a hand-over to a person.
+    if _PLATFORM_SQUEEZED in re.sub(r"[\W_]", "", folded) and _PLAN_TALK.search(folded):
         reasons.add("platform_plan")
 
     if _CREDENTIAL.search(text):
