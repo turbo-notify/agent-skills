@@ -277,3 +277,29 @@ def test_a_display_name_that_is_a_word_every_reply_uses_does_not_block_other_cus
     card.merge([Fact("name", "Obrigado", "admin", "2026-10-17T10:05:00Z")])  # a person confirmed it
     card.save()
     assert not verdict(ws, "Obrigado pelo contato!").ok
+
+
+def test_the_platforms_own_plan_allowance_or_upgrade_never_goes_to_a_customer(
+    tmp_path: Path,
+) -> None:  # ADR 2026-11-24, D5
+    ws = setup(tmp_path)
+    for text in (
+        "O plano do Turbo Notify atingiu o limite, o dono precisa fazer upgrade.",
+        "Our Turbo Notify plan reached its message allowance, the owner must upgrade.",
+        "A cota de mensagens do TURBO   NOTIFY acabou neste ciclo.",
+        "turbonotify subscription is not active",
+        "Desculpe a demora: o limite da assinatura do Turbo Notify foi atingido.",
+    ):
+        result = verdict(ws, text)
+        assert not result.ok and "platform_plan" in result.reasons, text
+
+
+def test_a_business_may_talk_about_its_own_plans_and_limits(tmp_path: Path) -> None:
+    ws = setup(tmp_path)
+    for text in (
+        "O plano mensal custa R$ 99 e inclui duas aulas por semana.",
+        "Our monthly plan includes two classes and the limit is one guest per class.",
+        "Fazemos upgrade do seu plano de internet para 500 mega sem custo.",
+        "A cota de mensagens SMS do seu plano renova todo dia 5.",
+    ):
+        assert verdict(ws, text).ok, text

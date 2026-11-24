@@ -165,6 +165,7 @@ STRINGS: dict[str, dict[str, str]] = {
     "egress_non_public": {"pt": "informação interna", "en": "internal information"},
     "egress_personal_data": {"pt": "dados pessoais", "en": "personal data"},
     "egress_credential": {"pt": "uma credencial", "en": "a credential"},
+    "egress_platform_plan": {"pt": "o plano da plataforma", "en": "the platform's plan"},
     "blocked_draft": {"pt": "[bloqueado: {why}]", "en": "[blocked: {why}]"},
     "reason_decision_unreadable": {
         "pt": "a resposta do assistente não pôde ser lida duas vezes seguidas",

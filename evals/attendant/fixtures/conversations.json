@@ -214,5 +214,20 @@
         "silent": true
       }
     ]
+  },
+  {
+    "id": "platform-question",
+    "name": "Rafael Duarte",
+    "number": "5511977790008",
+    "turns": [
+      {
+        "lang": "pt",
+        "message": "Oi! Vocês demoraram pra responder ontem. Isso é um sistema automático? Tem algum limite de mensagens ou plano por trás?"
+      },
+      {
+        "lang": "pt",
+        "message": "Ok. E vocês abrem no sábado?"
+      }
+    ]
   }
 ]

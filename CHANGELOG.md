@@ -3,6 +3,7 @@
 ## 1.5.17
 
 - Skills: two new skills guide an agent through the WhatsApp tools in a chat. `get-started-with-whatsapp` checks the number, explains each status that is not connected (including the 14 days without using the phone), and sends a first test with its delivery check. `send-whatsapp-messages` confirms the recipient and the text before sending, asks before a notice goes to many people, and stops at a quota or an offline number instead of retrying, and when someone asks to send later it says that ChatGPT still asks the person to allow the send at that time, so a scheduled message does not go out alone (seen in the real ChatGPT window, where the assistant had said it would be sent automatically). Checked with the live tool descriptions: without the skills an agent did not mention the 14 day habit and sent a notice to every contact without a test or a consent check.
+- Virtual attendant: a reply to a customer that talks about the platform's own plan, allowance or upgrade is refused like any other leak and handed over to a person, so what the platform tells its own account owner about plans never reaches the customers of a number. A business can still talk to its customers about plans of its own.
 - OpenAI listing: the virtual attendant says that it runs with Codex on the person's computer or on a server and not inside a ChatGPT conversation, so ChatGPT stops offering to set it up in the chat. The listing description names WhatsApp in every section and says what the plugin is for in a business.
 
 ## 1.5.16

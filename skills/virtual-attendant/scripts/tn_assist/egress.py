@@ -1,9 +1,9 @@
 """The egress guard: what may leave toward one customer.
 
 Deterministic and conservative. A reply is refused when it contains another person's number or
-name, text from a non-public source, a credential, or a personal-data pattern that the customer
-did not supply and public knowledge does not publish. A refusal is safe by design: the caller turns
-it into a hand-off, never into a retry.
+name, text from a non-public source, a credential, the platform's own plan or allowance, or a
+personal-data pattern that the customer did not supply and public knowledge does not publish. A
+refusal is safe by design: the caller turns it into a hand-off, never into a retry.
 """
 
 from __future__ import annotations
@@ -30,6 +30,15 @@ _MONEY = re.compile(
     re.IGNORECASE,
 )
 MAX_MONEY_DIGITS = 9
+# What the platform says to its own account owner about plans is not for a customer of a number
+# (ADR 2026-11-24, D5). Specific on purpose: the platform name together with a word about a plan,
+# an allowance or an upgrade. The bare words plan and plano are NOT matched, because a business
+# sells plans of its own and its customers must keep reading them.
+_PLATFORM = re.compile(r"\bturbo\s*notify\b")
+_PLAN_TALK = re.compile(
+    r"\b(?:plan|plans|plano|planos|assinatura|assinaturas|subscription|subscriptions|cota|cotas"
+    r"|quota|quotas|allowance|allowances|limite|limites|limit|limits|upgrade|franquia)\b"
+)
 
 
 @dataclass(frozen=True)
@@ -265,6 +274,13 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
             and not _contains(allowed_words, sequence)
         ):
             reasons.add("non_public")
+
+    if (
+        _PLATFORM.search(folded)
+        and _PLAN_TALK.search(folded)
+        and not _PLATFORM.search(_fold(public_text))  # a reseller may publish its own platform
+    ):
+        reasons.add("platform_plan")
 
     if _CREDENTIAL.search(text):
         reasons.add("credential")
