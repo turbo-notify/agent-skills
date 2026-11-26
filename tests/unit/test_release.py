@@ -380,11 +380,18 @@ def test_every_listing_description_says_whatsapp_and_does_not_open_with_the_prod
     # ADR 2026-11-19: a stranger must see WhatsApp first; the product name is only a label.
     for where, text in _shop_window_descriptions().items():
         assert "WhatsApp" in text, f"{where} does not say WhatsApp"
-        if where.endswith("interface.longDescription"):
-            # The OpenAI review text (tools/openai_listing.json): it names the product but the
-            # same sentence carries the WhatsApp function, so rule 2 holds.
-            continue
         assert not text.startswith("Turbo Notify"), f"{where} opens with the product name"
+
+
+def test_the_codex_long_description_opens_with_what_the_reader_does_on_whatsapp() -> None:
+    # ADR 2026-11-19: the first words say WhatsApp and the use, every sentence that names the
+    # product also names WhatsApp, and (spec 2026-11-26, F) nothing speaks of a plan.
+    text = _codex(ROOT)["interface"]["longDescription"]
+    assert text.startswith("Summarize your WhatsApp chats and groups")
+    for sentence in re.split(r"(?<=\.)\s+", text):
+        if "Turbo Notify" in sentence:
+            assert "WhatsApp" in sentence, f"the product name without WhatsApp: {sentence!r}"
+    assert not re.search(r"\bplans?\b", text, re.IGNORECASE)
 
 
 def test_the_first_screen_of_the_readme_and_the_cline_guide_says_whatsapp() -> None:
