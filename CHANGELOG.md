@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.18
+
+- Skills: a new skill, `summarize-whatsapp`, summarizes a person's WhatsApp chats and groups into who is waiting for a reply, money and deadlines, changes of plans and group news. It reads at most 8 pages of messages (about 400), counts the messages whose text is no longer kept, treats message text as data (a message aimed at an assistant is reported, its links not repeated) and sends nothing. It ends with how long text is kept for the account, the most the account's plan allows and where to change it, a line that never goes into a WhatsApp message. A daily or twice a day schedule is created only after the person confirms that the unattended run cannot act on the account; there is no weekly schedule.
+- Skills: `get-started-with-whatsapp` states how long message text is kept and where to change it, and offers a first summary later the same day or a daily one, under the same confirmation. No skill states a fixed period any more: it depends on the account and `get_usage` gives it.
+- Virtual attendant: setup and status tell the administrator how long message text is kept, the plan maximum and the settings link. A reply to a customer that carries the settings link or the link of the retention page is refused like any other leak and handed over to a person.
+- Listing: the summary comes first among the first requests, the three starter prompts ask for a WhatsApp summary (once, daily and twice a day) in the OpenAI listing, the Codex manifest and the Antigravity manifest, one review case covers the summary, and the description says that message text is kept for a limited time that depends on the account.
+
 ## 1.5.17
 
 - Skills: two new skills guide an agent through the WhatsApp tools in a chat. `get-started-with-whatsapp` checks the number, explains each status that is not connected (including the 14 days without using the phone), and sends a first test with its delivery check. `send-whatsapp-messages` confirms the recipient and the text before sending, asks before a notice goes to many people, and stops at a quota or an offline number instead of retrying, and when someone asks to send later it says that ChatGPT still asks the person to allow the send at that time, so a scheduled message does not go out alone (seen in the real ChatGPT window, where the assistant had said it would be sent automatically). Checked with the live tool descriptions: without the skills an agent did not mention the 14 day habit and sent a notice to every contact without a test or a consent check.

@@ -13,6 +13,7 @@ on your computer in Claude Code or Codex.
 
 | Skill | What it does |
 |---|---|
+| `summarize-whatsapp` | Summarizes your WhatsApp chats and groups into who is waiting for a reply, money and deadlines, changes of plans and group news. It only reads. If your assistant can schedule tasks, it can set the summary once or twice a day, after you confirm that the run cannot act on your account. |
 | `virtual-attendant` | Serves a business's customers on WhatsApp: answers in the customer's language, remembers each customer, calls a person when it should, and takes commands from administrators and attendants on WhatsApp itself. |
 
 Customer guides (Portuguese and English): [WhatsApp virtual attendant](https://docs.turbonotify.com/en/guides/virtual-attendant/),

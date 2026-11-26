@@ -72,9 +72,10 @@ POSITIVE_CASES, NEGATIVE_CASES = 5, 3
 URL_KEYS = ("websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL")
 REVIEWER_KEYS = ("test_credentials", "reviewer_instructions")
 DASHES = re.compile("[–—]")
-# The attendant and the two skills that guide an agent through the WhatsApp tools in a chat.
+# The attendant and the skills that guide an agent through the WhatsApp tools in a chat.
 CHAT_SKILLS = tuple(
-    f"skills/{name}" for name in ("get-started-with-whatsapp", "send-whatsapp-messages")
+    f"skills/{name}"
+    for name in ("summarize-whatsapp", "get-started-with-whatsapp", "send-whatsapp-messages")
 )
 INCLUDE_TREES = (SKILL, *CHAT_SKILLS)
 # Inside the skill, what belongs to another vendor's runtime.
@@ -165,9 +166,9 @@ REPLACEMENTS: tuple[Replacement, ...] = (
         "It checks every 20 seconds (`--interval`). Logs with ids and counts (never message "
         "text) are in `<workspace>/logs/runner.jsonl`. To keep it running after you close the "
         "terminal, use what your system offers (`tmux`, `launchd`, `systemd`). To stop, press "
-        "Ctrl+C: the next start catches up, as long as it is within the plan's retention "
-        "(1 hour by default, so restart quickly). A second runner on the same workspace does "
-        "nothing.",
+        "Ctrl+C: if you restart quickly, the next start catches up on what is still within "
+        "the account's message window (`content_retention_hours` in `get_usage`). A second "
+        "runner on the same workspace does nothing.",
     ),
 )
 # Rows of the update table that name another vendor, removed whole.

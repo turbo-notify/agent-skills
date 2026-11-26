@@ -31,7 +31,7 @@ Repeat `tn_assist next --kinds contact,admin,attendant,compaction` until `item` 
 
 ## Timing
 
-Run a cycle every 20 to 60 seconds. Never leave more than 10 minutes between cycles: the platform deletes message content after the plan's retention (1 hour by default).
+Run a cycle every 20 to 60 seconds. Never leave more than 10 minutes between cycles: the platform deletes message content after a period that depends on the account (`content_retention_hours` in `get_usage`).
 
 ## What you must not do here
 

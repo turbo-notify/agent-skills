@@ -56,7 +56,11 @@ If the harness has other MCP servers installed (a catalog, a CRM, an agenda), fo
 
 ## 7. Privacy and mode
 
-Give the person the privacy notice from [privacy.md](privacy.md). Confirm that the mode is **assisted** (`tn_assist status` shows it) and explain that the assistant prepares answers and a person approves them with `/enviar` (or `/send`) until they switch to automatic (only Claude Code and Codex with the runner: in Claude Desktop, Cowork and Antigravity the command is refused and the mode stays assisted) with `/modo automático` (or `/mode auto`). Recommend at least the first week in assisted mode.
+Tell the person the message window (the section below). Give the person the privacy notice from [privacy.md](privacy.md). Confirm that the mode is **assisted** (`tn_assist status` shows it) and explain that the assistant prepares answers and a person approves them with `/enviar` (or `/send`) until they switch to automatic (only Claude Code and Codex with the runner: in Claude Desktop, Cowork and Antigravity the command is refused and the mode stays assisted) with `/modo automático` (or `/mode auto`). Recommend at least the first week in assisted mode.
+
+## The message window
+
+During setup, and every time the administrator asks for the status, call `get_usage` and tell the administrator how many hours Turbo Notify keeps the text of a received message (`content_retention_hours`), the plan maximum (`content_retention_max_hours`, or that this is it) and where to change it (`content_retention_settings_url`). Without `content_retention_max_hours`, say only that the period depends on the account. Only if the administrator asks to keep text longer than the maximum and `longer_retention_on_other_plans` is true, add that other plans keep text longer (`plans_info_url`). Never mention amounts or offer a plan change. All of this is for the administrator and never to a customer: put none of it in the business knowledge or in a reply (`tn_assist` refuses a customer reply that carries one of the two links).
 
 ## 8. First run
 

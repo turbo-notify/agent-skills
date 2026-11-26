@@ -207,7 +207,8 @@ def test_the_listing_is_found_by_whatsapp_and_usable_on_the_first_try(archive: P
     assert all(len(label) <= 60 for label in interface["capabilities"])
     for fact in (
         "https://dashboard.turbonotify.com/auth/signup",  # where to get the account
-        "one hour by default",  # how long the text of received messages is kept
+        # how long the text of received messages is kept
+        "for a limited time that depends on your account",
         "every 14 days",  # WhatsApp ends the link after 14 days without use of the phone
         "In ChatGPT you get these tools; the virtual attendant is not available there",
         "not affiliated with, endorsed by or sponsored by WhatsApp or Meta",
@@ -216,7 +217,7 @@ def test_the_listing_is_found_by_whatsapp_and_usable_on_the_first_try(archive: P
     translated = block["publication"]["translations"]["pt-BR"]["description"]
     for fact in (
         "https://dashboard.turbonotify.com/auth/signup",
-        "uma hora por padrão",
+        "por um tempo limitado, que depende da sua conta",
         "a cada 14 dias",
         "No ChatGPT você tem essas ferramentas; o atendente virtual não está disponível lá",
         "não é afiliado, endossado nem patrocinado pelo WhatsApp ou pela Meta",
@@ -233,6 +234,68 @@ def test_the_listing_is_found_by_whatsapp_and_usable_on_the_first_try(archive: P
         "contam no seu plano",
     ):
         assert phrase not in long_text and phrase not in translated
+
+
+STARTER_PROMPTS = [  # spec 2026-11-26, C7
+    "Summarize my WhatsApp: who is waiting for a reply, plus payments and deadlines.",
+    "Every day at 7 pm, summarize my WhatsApp and list what I still have to answer.",
+    "Twice a day, at 7 am and 7 pm, recap what is new in my WhatsApp groups and chats.",
+]
+
+
+def test_every_manifest_offers_the_three_summary_starter_prompts(archive: Path) -> None:  # AC11
+    interface = listing_manifest(archive)["extensions"]["com.openai"]["interface"]
+    codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    root = json.loads((ROOT / "plugin.json").read_text(encoding="utf-8"))
+    for where, prompts in (
+        ("OpenAI listing", interface["defaultPrompt"]),
+        ("Codex manifest", codex["interface"]["defaultPrompt"]),
+        ("root plugin.json", root["suggestedPrompts"]),
+    ):
+        assert prompts == STARTER_PROMPTS, where
+    assert all(len(prompt) <= pkg.PROMPT_MAX for prompt in STARTER_PROMPTS)
+
+
+def test_the_archive_carries_the_summary_skill_and_its_review_case(archive: Path) -> None:  # AC11
+    assert "skills/summarize-whatsapp/SKILL.md" in names(archive)
+    cases = listing_manifest(archive)["extensions"]["com.openai"]["review"]["test_cases"]
+    summary = [
+        case for case in cases["positive"] if case["tools_triggered"] == "get_usage, list_messages"
+    ]
+    assert len(summary) == 1 and "WhatsApp" in summary[0]["prompt"]
+    assert "Sends nothing" in summary[0]["expected_behavior"]
+    assert (len(cases["positive"]), len(cases["negative"])) == (5, 3)
+
+
+def test_the_listing_puts_the_summary_first_and_sells_nothing(archive: Path) -> None:  # C7
+    block = listing_manifest(archive)["extensions"]["com.openai"]
+    interface = block["interface"]
+    translated = block["publication"]["translations"]["pt-BR"]["description"]
+    assert interface["capabilities"][0] == "Summarize your WhatsApp chats and groups"
+    for text, heading, first in (
+        (interface["longDescription"], "Good first requests", "Summarize your WhatsApp"),
+        (translated, "Bons primeiros pedidos", "Resumir o seu WhatsApp"),
+    ):
+        sections = text.split("\n\n")
+        requests = next(s for s in sections if s.startswith(heading))
+        assert requests.split("\n")[1].startswith(first)
+        for section in sections:
+            assert "WhatsApp" in section, f"a section does not name WhatsApp: {section[:60]!r}"
+        assert not re.search(
+            r"\b(?:price|pricing|plans?|trial|upgrade|subscri\w*|preços?|planos?|assinatura\w*|"
+            r"teste grátis)\b",
+            text,
+            re.IGNORECASE,
+        )
+        assert not re.search(r"one hour|uma hora|last hour|última hora", text, re.IGNORECASE)
+
+
+def test_the_attendant_in_the_archive_states_no_fixed_period(archive: Path) -> None:  # A5
+    with zipfile.ZipFile(archive) as z:
+        text = z.read(f"{SKILL}/references/harness-codex.md").decode()
+        everything = "".join(z.read(n).decode() for n in z.namelist() if n.endswith(".md"))
+    assert "the account's message window (`content_retention_hours` in `get_usage`)" in text
+    assert not re.search(r"(?:1|one) hour by default", everything)
 
 
 def test_the_author_is_the_developer_and_no_claude_style_key_is_left(archive: Path) -> None:  # AC11

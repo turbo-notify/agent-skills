@@ -29,7 +29,7 @@ python3 <skill folder>/scripts/tn_assist run --harness claude-code
 - Needs: Claude Code logged in on this machine, Python 3.9 or newer, the computer on and online.
 - It checks every 20 seconds (`--interval`). Idle cycles cost no model tokens. Each customer message costs one short model turn (and a second one now and then to summarize a long conversation).
 - To keep it running after you close the terminal, use what your system offers (`tmux`, `launchd`, `systemd`, a service manager). Logs with ids and counts (never message text) are in `<workspace>/logs/runner.jsonl`.
-- To stop: Ctrl+C. Nothing is lost: the next start catches up, as long as it is within the plan's retention (1 hour by default, so restart quickly).
+- To stop: Ctrl+C. Nothing is lost if you restart quickly: the next start catches up on what is still within the account's message window (`content_retention_hours` in `get_usage`).
 - A second runner on the same workspace does nothing.
 
 ## In session
@@ -44,5 +44,5 @@ Follow [tick.md](tick.md) for each cycle. For each customer use the `contact-att
 
 ## What it cannot do
 
-- It does not run when the computer is off or Claude Code is closed. A message that arrives meanwhile is read when you start again, if within the retention.
+- It does not run when the computer is off or Claude Code is closed. A message that arrives meanwhile is read when you start again, if its text is still within that window.
 - The in-session mode shares your session's tools and memory with the attendant's work. Prefer the unattended runner for a business.

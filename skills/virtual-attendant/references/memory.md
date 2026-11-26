@@ -1,6 +1,6 @@
 # Memory
 
-Everything lives in the workspace, on this machine. The platform deletes message content after the plan's retention (1 hour by default), so `ingest` stores each message the moment it reads it.
+Everything lives in the workspace, on this machine. The platform deletes message content after a period that depends on the account (`content_retention_hours` in `get_usage`), so `ingest` stores each message the moment it reads it.
 
 ## Layers, per customer
 
