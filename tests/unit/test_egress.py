@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from tests.support import factories as f
 from tests.support.knowledge import seed_knowledge
 from tests.support.workspace import make_workspace
@@ -321,3 +323,53 @@ def test_publishing_the_platform_name_does_not_switch_the_rule_off(tmp_path: Pat
     )
     result = verdict(ws, "O plano do Turbo Notify atingiu o limite de mensagens.")
     assert not result.ok and "platform_plan" in result.reasons
+
+
+WINDOW_DRAFTS = {  # a model that copies the closing line of a summary into a customer reply
+    "pt": "O texto das mensagens fica guardado por 4 horas. Mude em {link} quando quiser.",
+    "en": "Message text is kept for 4 hours. You can change it at {link} any time.",
+    "es": "El texto de los mensajes se guarda 4 horas. Puede cambiarlo en {link} cuando quiera.",
+}
+WINDOW_LINKS = (
+    "https://dashboard.turbonotify.com/settings/privacy",
+    "dashboard.turbonotify.com/settings/privacy/",
+    "https://dashboard.turbonotify.com/settings/privacy?from=chat",
+    "http://localhost:3000/settings/privacy",
+    "/Settings/Privacy",
+    "https://docs.turbonotify.com/en/messages/retention/",
+    "https://docs.turbonotify.com/messages/retention/",
+    "docs.turbonotify.com/pt-br/messages/retention",
+    "https://DOCS.TurboNotify.com/en/messages/retention/#plans",
+    # invisible and full-width characters do not hide a link
+    "dashboard.turbonotify.com/settings/pri\u200bvacy",
+    "docs.turbonotify.com\uff0fen\uff0fmessages\uff0fretention",
+)
+
+
+@pytest.mark.parametrize("link", WINDOW_LINKS)
+@pytest.mark.parametrize("lang", sorted(WINDOW_DRAFTS))
+def test_the_window_links_never_go_to_a_customer(
+    tmp_path: Path, lang: str, link: str
+) -> None:  # spec 2026-11-26, C6 and AC7
+    ws = setup(tmp_path)
+    result = verdict(ws, WINDOW_DRAFTS[lang].format(link=link))
+    assert not result.ok and "window_link" in result.reasons, (lang, link)
+
+
+def test_publishing_a_window_link_does_not_switch_the_rule_off(tmp_path: Path) -> None:
+    ws = setup(tmp_path)
+    link = "https://docs.turbonotify.com/en/messages/retention/"
+    ws.path("knowledge", "company.md").write_text(f"Leia {link}\n", encoding="utf-8")
+    assert verdict(ws, f"Leia {link}").reasons == ("window_link",)
+
+
+def test_other_pages_are_not_mistaken_for_the_window_links(tmp_path: Path) -> None:
+    ws = setup(tmp_path)
+    for text in (
+        "A nossa política está em https://loja.example/privacy.",
+        "Veja https://loja.example/settings/privacy-policy para os termos.",
+        "Guia: https://docs.turbonotify.com/en/messages/send/",
+        "Read https://loja.example/messages/retention-offers today.",
+        "Falamos de privacidade e de configurações quando você quiser.",
+    ):
+        assert verdict(ws, text).ok, text

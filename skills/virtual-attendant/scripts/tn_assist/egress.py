@@ -1,9 +1,10 @@
 """The egress guard: what may leave toward one customer.
 
 Deterministic and conservative. A reply is refused when it contains another person's number or
-name, text from a non-public source, a credential, the platform's own plan or allowance, or a
-personal-data pattern that the customer did not supply and public knowledge does not publish. A
-refusal is safe by design: the caller turns it into a hand-off, never into a retry.
+name, text from a non-public source, a credential, the platform's own plan or allowance, a link
+about the account's message window, or a personal-data pattern that the customer did not supply
+and public knowledge does not publish. A refusal is safe by design: the caller turns it into a
+hand-off, never into a retry.
 """
 
 from __future__ import annotations
@@ -40,6 +41,14 @@ _PLATFORM_SQUEEZED = "turbonotify"  # compared on the text without punctuation, 
 _PLAN_TALK = re.compile(
     r"\b(?:plan|plans|plano|planos|assinatura|assinaturas|subscription|subscriptions|cota|cotas"
     r"|quota|quotas|allowance|allowances|limite|limites|limit|limits|upgrade|franquia)\b"
+)
+# The two links about how long message text is kept: the dashboard page where the account owner
+# changes it and the documentation page that describes it, in any language. An agent gives them to
+# the person it works for, never to a customer of a number (spec 2026-11-26, C6).
+_WINDOW_LINK = re.compile(
+    r"(?:/settings/privacy"
+    r"|docs\.turbonotify\.com(?:/[a-z]{2}(?:-[a-z]{2})?)?/messages/retention)(?![\w-])",
+    re.IGNORECASE,
 )
 
 
@@ -281,6 +290,10 @@ def check_egress(ws: Workspace, text: str, *, contact: ContactKey) -> EgressVerd
     # must not switch the rule off, and a refusal only becomes a hand-over to a person.
     if _PLATFORM_SQUEEZED in re.sub(r"[\W_]", "", folded) and _PLAN_TALK.search(folded):
         reasons.add("platform_plan")
+
+    # No exemption for a business that publishes one of these links either, for the same reason.
+    if _WINDOW_LINK.search(text):
+        reasons.add("window_link")
 
     if _CREDENTIAL.search(text):
         reasons.add("credential")

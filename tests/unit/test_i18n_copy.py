@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import inspect
+import re
+
 from tests.support import copy_rules
+from tn_assist import egress
 from tn_assist.i18n import STRINGS, t
 
 
@@ -24,3 +28,10 @@ def test_connected_number_warning_explains_the_separation() -> None:
 
 def test_fields_are_filled_in() -> None:
     assert "Ana" in t("greeting_default", "pt", business="Ana")
+
+
+def test_every_reason_the_egress_guard_gives_can_be_told_to_a_person() -> None:
+    reasons = set(re.findall(r'reasons\.add\("([a-z_]+)"\)', inspect.getsource(egress)))
+    assert {"credential", "platform_plan", "window_link"} <= reasons
+    for reason in reasons:
+        assert t(f"egress_{reason}", "pt") and t(f"egress_{reason}", "en")

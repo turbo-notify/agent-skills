@@ -166,6 +166,7 @@ STRINGS: dict[str, dict[str, str]] = {
     "egress_personal_data": {"pt": "dados pessoais", "en": "personal data"},
     "egress_credential": {"pt": "uma credencial", "en": "a credential"},
     "egress_platform_plan": {"pt": "o plano da plataforma", "en": "the platform's plan"},
+    "egress_window_link": {"pt": "as configurações da conta", "en": "the account settings"},
     "blocked_draft": {"pt": "[bloqueado: {why}]", "en": "[blocked: {why}]"},
     "reason_decision_unreadable": {
         "pt": "a resposta do assistente não pôde ser lida duas vezes seguidas",
