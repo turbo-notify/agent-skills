@@ -368,6 +368,8 @@ def test_other_pages_are_not_mistaken_for_the_window_links(tmp_path: Path) -> No
     for text in (
         "A nossa política está em https://loja.example/privacy.",
         "Veja https://loja.example/settings/privacy-policy para os termos.",
+        "You can change this at https://app.loja.example/settings/privacy any time.",
+        "Abra https://loja.example:8443/settings/privacy para mudar.",
         "Guia: https://docs.turbonotify.com/en/messages/send/",
         "Read https://loja.example/messages/retention-offers today.",
         "Falamos de privacidade e de configurações quando você quiser.",

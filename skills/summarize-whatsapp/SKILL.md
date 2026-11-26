@@ -28,7 +28,7 @@ Short, no filler, only what you read; never guess what an image, voice note or e
 
 ## Close
 
-- Add one line from `get_usage`: how long text is kept now, the plan maximum (`content_retention_max_hours`) or that this is it, and `content_retention_settings_url` to change it. Below the maximum, say a longer period applies to messages received after the change; at the maximum, that choosing a shorter period also removes older text. Without `content_retention_max_hours`, add no line.
+- Add one line from `get_usage`: how long text is kept now, the plan maximum (`content_retention_max_hours`) or that this is it, and `content_retention_settings_url` to change it. Below the maximum, say a longer period applies to messages received after the change; at the maximum, that choosing a shorter period also removes older text. Without `content_retention_max_hours`, add no line. Give only addresses that `get_usage` returned: without `content_retention_settings_url`, leave the link out; without `plans_info_url`, leave out the other plans sentence. Never write an address yourself.
 - Only if messages of the period had expired, or the person asks to keep text longer than the maximum, and `longer_retention_on_other_plans` is true, add one sentence: other plans keep text longer (`plans_info_url`). Never mention amounts and never offer a plan change.
 - This line and its links are for the person only: never put them in a WhatsApp message, to a contact or a group. A summary they ask you to post goes out without them (`send-whatsapp-messages`).
 - Offer one next step: a draft reply for the most urgent item (send only after a clear yes) or a scheduled summary.

@@ -223,7 +223,22 @@ def test_the_first_steps_offer_a_later_summary_and_state_the_window() -> None:  
         "never weekly",
         "keep text longer than the maximum",
         "never in a WhatsApp message to anyone else",
+        "which hours will be missed",
+        "Never write an address yourself",
     )
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "summarize-whatsapp/SKILL.md",
+        "get-started-with-whatsapp/SKILL.md",
+        "virtual-attendant/references/setup.md",
+    ],
+)
+def test_no_text_has_the_agent_write_an_address_of_its_own(path: str) -> None:
+    text = (ATTENDANT.parent / path).read_text(encoding="utf-8")
+    _says(text, "Give only addresses that `get_usage` returned", "Never write an address yourself")
 
 
 def test_the_attendant_setup_and_status_tell_the_window_to_the_administrator() -> None:  # C6

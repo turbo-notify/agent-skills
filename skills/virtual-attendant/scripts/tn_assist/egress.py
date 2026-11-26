@@ -43,10 +43,11 @@ _PLAN_TALK = re.compile(
     r"|quota|quotas|allowance|allowances|limite|limites|limit|limits|upgrade|franquia)\b"
 )
 # The two links about how long message text is kept: the dashboard page where the account owner
-# changes it and the documentation page that describes it, in any language. An agent gives them to
-# the person it works for, never to a customer of a number (spec 2026-11-26, C6).
+# changes it (on our hosts, or written as a bare path) and the documentation page that describes
+# it, in any language. An agent gives them to the person it works for, never to a customer of a
+# number (spec 2026-11-26, C6). The same path on a business's own site is that business's page.
 _WINDOW_LINK = re.compile(
-    r"(?:/settings/privacy"
+    r"(?:(?:(?:dashboard\.turbonotify\.com|localhost)(?::\d+)?|(?<![\w.:/-]))/settings/privacy"
     r"|docs\.turbonotify\.com(?:/[a-z]{2}(?:-[a-z]{2})?)?/messages/retention)(?![\w-])",
     re.IGNORECASE,
 )
