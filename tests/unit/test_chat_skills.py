@@ -177,7 +177,7 @@ def test_the_summary_skill_closes_with_the_window_only_for_the_person() -> None:
         _text("summarize-whatsapp"),
         *(f"`{name}`" for name in WINDOW_FIELDS),
         "or that this is it",
-        "a longer period applies to messages received after the change",
+        "a longer period also keeps text not yet removed",
         "choosing a shorter period also removes older text",
         "Only if messages of the period had expired",
         "keep text longer than the maximum",
