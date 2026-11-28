@@ -33,6 +33,6 @@ If the person prefers an API key, they create one in the Turbo Notify dashboard 
 
 ## 3. Check that it works
 
-The server lists 36 tools, such as `list_numbers`, `send_text` and `list_messages`. Call `list_numbers` first: it shows the numbers the account can send from. Sending goes out from the person's own WhatsApp number, so confirm with them before you send.
+The server lists 37 tools, such as `list_numbers`, `send_text` and `list_messages`. Call `list_numbers` first: it shows the numbers the account can send from. Sending goes out from the person's own WhatsApp number, so confirm with them before you send.
 
 Documentation: https://docs.turbonotify.com/en/agents/mcp-server/
